@@ -71,6 +71,7 @@
 		qcom,audio {
 			qcom,dma-heap-name = "audio";
 			qcom,dma-heap-type = <HEAP_TYPE_CMA>;
+			qcom,uncached-heap;
 			memory-region = <&user_contig_mem>;
 		};
 	};
