@@ -405,7 +405,7 @@ static int thermal_pause_probe(struct platform_device *pdev)
 				"qcom,cdev-alias", &alias);
 		if (ret)
 			snprintf(thermal_pause_cdev->cdev_name, THERMAL_NAME_LENGTH,
-				"thermal-pause-%X", mask);
+				"thermal-pause-%lX", mask);
 		else
 			strscpy(thermal_pause_cdev->cdev_name, alias,
 					THERMAL_NAME_LENGTH);

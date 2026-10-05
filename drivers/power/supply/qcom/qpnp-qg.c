@@ -2781,7 +2781,7 @@ static int qg_init_psy(struct qpnp_qg *chip)
 	chip->qg_psy = devm_power_supply_register(chip->dev,
 				&qg_psy_desc, &qg_psy_cfg);
 	if (IS_ERR_OR_NULL(chip->qg_psy)) {
-		pr_err("Failed to register qg_psy, rc = %d\n",
+		pr_err("Failed to register qg_psy, rc = %ld\n",
 				PTR_ERR(chip->qg_psy));
 		return -ENODEV;
 	}
@@ -4582,7 +4582,7 @@ static int process_suspend(struct qpnp_qg *chip)
 
 	get_rtc_time(&chip->suspend_time);
 
-	qg_dbg(chip, QG_DEBUG_PM, "FIFO rt_length=%d sleep_fifo_length=%d default_s2_count=%d suspend_data=%d time=%d\n",
+	qg_dbg(chip, QG_DEBUG_PM, "FIFO rt_length=%d sleep_fifo_length=%d default_s2_count=%d suspend_data=%d time=%lu\n",
 			fifo_rt_length, sleep_fifo_length,
 			chip->dt.s2_fifo_length, chip->suspend_data,
 			chip->suspend_time);
@@ -4645,7 +4645,7 @@ static int process_resume(struct qpnp_qg *chip)
 	}
 	rt_status &= FIFO_UPDATE_DONE_INT_LAT_STS_BIT;
 
-	qg_dbg(chip, QG_DEBUG_PM, "FIFO_DONE_STS=%d suspend_data=%d good_ocv=%d sleep_time=%d secs\n",
+	qg_dbg(chip, QG_DEBUG_PM, "FIFO_DONE_STS=%d suspend_data=%d good_ocv=%d sleep_time=%lu secs\n",
 				!!rt_status, chip->suspend_data,
 				chip->kdata.param[QG_GOOD_OCV_UV].valid,
 				sleep_time_secs);

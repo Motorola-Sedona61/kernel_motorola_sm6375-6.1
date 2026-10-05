@@ -178,7 +178,7 @@ void *qcom_mdt_read_metadata(struct device *dev, const struct firmware *fw, cons
 			goto free_metadata;
 
 		}
-		snprintf(fw_name + strlen(fw_name) - 3, 4, "b%02d", hash_index);
+		snprintf(fw_name + strlen(fw_name) - 3, 4, "b%02zu", hash_index);
 
 		ret = request_firmware_into_buf(&seg_fw, fw_name, dev, data + ehdr_size, hash_size);
 		kfree(fw_name);

@@ -170,7 +170,7 @@ static ssize_t txn_id_show(struct device *dev, struct device_attribute *attr, ch
 	struct platform_device *pdev = container_of(dev, struct platform_device, dev);
 	struct qcom_adsp *adsp = (struct qcom_adsp *)platform_get_drvdata(pdev);
 
-	return sysfs_emit(buf, "%zu\n", qcom_sysmon_get_txn_id(adsp->sysmon));
+	return sysfs_emit(buf, "%u\n", qcom_sysmon_get_txn_id(adsp->sysmon));
 }
 static DEVICE_ATTR_RO(txn_id);
 

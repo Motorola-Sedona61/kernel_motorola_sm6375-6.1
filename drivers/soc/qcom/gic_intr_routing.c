@@ -281,7 +281,7 @@ static void trace_gic_v3_set_affinity(void *unused, struct irq_data *d,
 	u32 gicr_ctlr_val;
 	void __iomem *cpu_gicr_ctlr_addr;
 
-	pr_debug("irq : %d mask: %*pb current affinity: %*pb\n",
+	pr_debug("irq : %lu mask: %*pb current affinity: %*pb\n",
 		d->hwirq, cpumask_pr_args(cpu_affinity),
 		cpumask_pr_args(current_affinity));
 
@@ -330,7 +330,7 @@ static void trace_gic_v3_set_affinity(void *unused, struct irq_data *d,
 		    !cpu_online(cpu) &&
 		    cpumask_test_cpu(cpu,
 		    &gic_routing_data.gic_routing_class0_cpus)) {
-			pr_debug("Affinity broken class 0 irq: %d\n", d->hwirq);
+			pr_debug("Affinity broken class 0 irq: %lu\n", d->hwirq);
 			return;
 		}
 	}
@@ -342,7 +342,7 @@ static void trace_gic_v3_set_affinity(void *unused, struct irq_data *d,
 		    !cpu_online(cpu) &&
 		    cpumask_test_cpu(cpu,
 		    &gic_routing_data.gic_routing_class1_cpus)){
-			pr_debug("Affinity broken class 1 irq: %d\n", d->hwirq);
+			pr_debug("Affinity broken class 1 irq: %lu\n", d->hwirq);
 			return;
 		}
 	}
@@ -359,7 +359,7 @@ static void trace_gic_v3_set_affinity(void *unused, struct irq_data *d,
 	    !cpumask_equal(&gic_routing_data.gic_routing_class1_cpus,
 			   cpu_affinity) &&
 	    !cpumask_equal(&all_cpus, cpu_affinity)) {
-		pr_debug("irq: %d has subset affinity, skip class setting\n", d->hwirq);
+		pr_debug("irq: %lu has subset affinity, skip class setting\n", d->hwirq);
 		goto clear_class;
 	}
 

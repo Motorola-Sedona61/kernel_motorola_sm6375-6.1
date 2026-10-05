@@ -71,7 +71,7 @@ static int devfreq_vdd_cdev_set_min_state(struct thermal_cooling_device *cdev,
 
 	ret = dev_pm_qos_update_request(&dfc->qos_min_freq_req, freq);
 	if (ret < 0) {
-		pr_err("Error placing qos request:%u. err:%d\n",
+		pr_err("Error placing qos request:%lu. err:%d\n",
 			freq, ret);
 		return ret;
 	}

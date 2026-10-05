@@ -140,7 +140,7 @@ void panel_event_notification_trigger(enum panel_event_notifier_tag tag,
 		mutex_lock(&panel_event_notifier_entries_lock);
 		entry = &panel_event_notifier_entries[i];
 		if (notification->panel != entry->panel) {
-			pr_debug("invalid panel found notification_panel:0x%x entry_panel:0x%x\n",
+			pr_debug("invalid panel found notification_panel:%p entry_panel:%p\n",
 					notification->panel, entry->panel);
 			mutex_unlock(&panel_event_notifier_entries_lock);
 			continue;

@@ -1481,7 +1481,7 @@ static ssize_t enable_sink_store(struct device *dev,
 	if (ret)
 		return ret;
 
-	dev_err(dev, "[%s][%d][%s] val = %d\n", current->comm, current->pid, __func__, val);
+	dev_err(dev, "[%s][%d][%s] val = %lu\n", current->comm, current->pid, __func__, val);
 	if (val) {
 		sink = coresight_get_enabled_sink_from_bus(false);
 		if (sink && sink->type != csdev->type) {
@@ -1518,7 +1518,7 @@ static ssize_t enable_source_store(struct device *dev,
 	if (ret)
 		return ret;
 
-	dev_err(dev, "[%s][%d][%s] val = %d\n", current->comm, current->pid, __func__, val);
+	dev_err(dev, "[%s][%d][%s] val = %lu\n", current->comm, current->pid, __func__, val);
 	if (val) {
 		ret = coresight_enable(csdev);
 		if (ret)

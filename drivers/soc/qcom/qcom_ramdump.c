@@ -115,7 +115,7 @@ int qcom_dump(struct list_head *segs, struct device *dev)
 		return -EINVAL;
 
 	list_for_each_entry(segment, segs, node) {
-		pr_info("Got segment size %d\n", segment->size);
+		pr_info("Got segment size %zu\n", segment->size);
 		data_size += segment->size;
 	}
 
@@ -181,7 +181,7 @@ int qcom_elf_dump(struct list_head *segs, struct device *dev, unsigned char clas
 	if (!data)
 		return -ENOMEM;
 
-	pr_debug("Creating elf with size %d\n", data_size);
+	pr_debug("Creating elf with size %zu\n", data_size);
 	ehdr = data;
 
 	memset(ehdr, 0, sizeof_elf_hdr(class));

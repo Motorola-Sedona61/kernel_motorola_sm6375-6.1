@@ -632,7 +632,7 @@ void qcom_system_heap_create(const char *name, const char *system_alias, bool un
 
 		heap = dma_heap_add(&exp_info);
 		if (IS_ERR(heap)) {
-			pr_err("%s: Failed to create '%s', error is %d\n", __func__,
+			pr_err("%s: Failed to create '%s', error is %ld\n", __func__,
 			       system_alias, PTR_ERR(heap));
 			return;
 		}

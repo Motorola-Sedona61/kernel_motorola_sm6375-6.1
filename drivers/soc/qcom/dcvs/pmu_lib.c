@@ -385,7 +385,7 @@ int qcom_get_cpucp_id(u32 event_id, int cpu)
 
 	event = get_event(event_id, cpu);
 	if (IS_ERR(event)) {
-		pr_err("error getting event %d\n", PTR_ERR(event));
+		pr_err("error getting event %ld\n", PTR_ERR(event));
 		return PTR_ERR(event);
 	}
 
@@ -1034,7 +1034,7 @@ static int init_pmu_events(struct device *dev)
 			cpucp_map[cid].shared = true;
 			cpucp_map[cid].cpus = cpus;
 		}
-		dev_dbg(dev, "entry=%d: ev=%lu, cpus=%lu cpucp id=%lu amu_id=%d\n",
+		dev_dbg(dev, "entry=%d: ev=%u, cpus=%lu cpucp id=%u amu_id=%d\n",
 			i, event_id, cpus, cid, amu_id);
 	}
 

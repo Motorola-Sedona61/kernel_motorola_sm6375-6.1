@@ -243,7 +243,7 @@ static int qg_process_tcss_soc(struct qpnp_qg *chip, int sys_soc)
 	union power_supply_propval prop = {0, };
 
 	if(!chip || !chip->batt_psy) {
-		pr_info("chip(0x%x) or chip->batt_psy(0x%x) is not ready!\n", chip, (chip) ? chip->batt_psy : NULL);
+		pr_info("chip(%p) or chip->batt_psy(%p) is not ready!\n", chip, (chip) ? chip->batt_psy : NULL);
 		goto exit_soc_scale;
 	}
 

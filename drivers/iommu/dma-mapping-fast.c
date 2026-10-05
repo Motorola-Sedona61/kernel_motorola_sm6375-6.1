@@ -942,7 +942,7 @@ static void fast_smmu_reserve_msi_iova(struct device *dev, struct dma_fast_smmu_
 			msi_size);
 		goto out;
 	}
-	dev_dbg(dev, "iova allocator reserved 0x%lx-0x%lx for MSI\n", msi_iova_base,
+	dev_dbg(dev, "iova allocator reserved 0x%llx-0x%llx for MSI\n", msi_iova_base,
 		msi_iova_base + msi_size);
 	spin_unlock_irqrestore(&fast->lock, flags);
 

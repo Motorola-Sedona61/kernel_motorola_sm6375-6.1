@@ -200,18 +200,18 @@ void arm_smmu_debug_dump_debugchain(struct device *dev, void __iomem *debugchain
 	u64 val;
 
 	chain_length = arm_smmu_debug_qtb_debugchain_load(debugchain_base);
-	dev_info(dev, "Dumping Debug chain: Length : %d\n", chain_length);
+	dev_info(dev, "Dumping Debug chain: Length : %ld\n", chain_length);
 	/* First read is to dump away the 0xDEADBEEF value */
 	arm_smmu_debug_qtb_debugchain_dump(debugchain_base);
 	do {
 		val = arm_smmu_debug_qtb_debugchain_dump(debugchain_base);
-		dev_info(dev, "Debug chain: Index :%ld, val : 0x%lx\n", index++, val);
+		dev_info(dev, "Debug chain: Index :%ld, val : 0x%llx\n", index++, val);
 	} while (chain_length--);
 }
 
 void arm_smmu_debug_dump_qtb_regs(struct device *dev, void __iomem *tbu_base)
 {
-	dev_info(dev, "QSMSTATUS: 0x%lx IDLESTATUS: 0x%lx\n",
+	dev_info(dev, "QSMSTATUS: 0x%x IDLESTATUS: 0x%x\n",
 			readl_relaxed(tbu_base + Qtb500_QtbNsDbgQsmStatus),
 			readl_relaxed(tbu_base + Qtb500_QtbNsDbgIdleStatus));
 }
@@ -300,7 +300,7 @@ static void arm_smmu_debug_dump_tbu_qns4_testbus(struct device *dev,
 		reg = arm_smmu_debug_tbu_testbus_select(tbu_base, READ, 0);
 		reg = (reg & ~TBU_QNS4_BRIDGE_MASK) | i << 0;
 		arm_smmu_debug_tbu_testbus_select(tbu_base, WRITE, reg);
-		dev_info(dev, "testbus_sel: 0x%lx Index: %d val: 0x%llx\n",
+		dev_info(dev, "testbus_sel: 0x%x Index: %d val: 0x%x\n",
 			arm_smmu_debug_tbu_testbus_select(tbu_base,
 						READ, 0), i,
 			arm_smmu_debug_tbu_testbus_output(tbu_base));
@@ -324,7 +324,7 @@ void arm_smmu_debug_dump_tbu_testbus(struct device *dev, void __iomem *tbu_base,
 		dev_info(dev, "Dumping TBU clk gate controller:\n");
 		arm_smmu_debug_program_tbu_testbus(tbu_base,
 				TBU_CLK_GATE_CONTROLLER_TESTBUS);
-		dev_info(dev, "testbus_sel: 0x%lx val: 0x%llx\n",
+		dev_info(dev, "testbus_sel: 0x%x val: 0x%x\n",
 			arm_smmu_debug_tbu_testbus_select(tbu_base,
 						READ, 0),
 			arm_smmu_debug_tbu_testbus_output(tbu_base));
@@ -348,7 +348,7 @@ void arm_smmu_debug_dump_tbu_testbus(struct device *dev, void __iomem *tbu_base,
 		dev_info(dev, "Dumping multi master qchannel:\n");
 		arm_smmu_debug_program_tbu_testbus(tbu_base,
 				TBU_MULTIMASTER_QCHANNEL_TESTBUS);
-		dev_info(dev, "testbus_sel: 0x%lx val: 0x%llx\n",
+		dev_info(dev, "testbus_sel: 0x%x val: 0x%x\n",
 			arm_smmu_debug_tbu_testbus_select(tbu_base,
 						READ, 0),
 			arm_smmu_debug_tbu_testbus_output(tbu_base));
@@ -358,7 +358,7 @@ void arm_smmu_debug_dump_tbu_testbus(struct device *dev, void __iomem *tbu_base,
 		dev_info(dev, "Dumping tbu clk gate controller ext:\n");
 		arm_smmu_debug_program_tbu_testbus(tbu_base,
 				TBU_CLK_GATE_CONTROLLER_EXT_TESTBUS);
-		dev_info(dev, "testbus_sel: 0x%lx val: 0x%llx\n",
+		dev_info(dev, "testbus_sel: 0x%x val: 0x%x\n",
 			arm_smmu_debug_tbu_testbus_select(tbu_base,
 						READ, 0),
 			arm_smmu_debug_tbu_testbus_output(tbu_base));
@@ -368,7 +368,7 @@ void arm_smmu_debug_dump_tbu_testbus(struct device *dev, void __iomem *tbu_base,
 		dev_info(dev, "Dumping tbu low power status:\n");
 		arm_smmu_debug_program_tbu_testbus(tbu_base,
 				TBU_LOW_POWER_STATUS_TESTBUS);
-		dev_info(dev, "testbus_sel: 0x%lx val: 0x%llx\n",
+		dev_info(dev, "testbus_sel: 0x%x val: 0x%x\n",
 			arm_smmu_debug_tbu_testbus_select(tbu_base,
 						READ, 0),
 			arm_smmu_debug_tbu_testbus_output(tbu_base));
@@ -378,7 +378,7 @@ void arm_smmu_debug_dump_tbu_testbus(struct device *dev, void __iomem *tbu_base,
 		dev_info(dev, "Dumping tbu qns4 vld rdy:\n");
 		arm_smmu_debug_program_tbu_testbus(tbu_base,
 				TBU_QNS4_VLD_RDY);
-		dev_info(dev, "testbus_sel: 0x%lx val: 0x%llx\n",
+		dev_info(dev, "testbus_sel: 0x%x val: 0x%x\n",
 			arm_smmu_debug_tbu_testbus_select(tbu_base,
 						READ, 0),
 			arm_smmu_debug_tbu_testbus_output(tbu_base));
@@ -401,7 +401,7 @@ static void arm_smmu_debug_program_tcu_testbus(struct device *dev,
 		arm_smmu_debug_tcu_testbus_select(phys_addr, tcu_base,
 				PTW_AND_CACHE_TESTBUS, WRITE, reg);
 		if (print)
-			dev_info(dev, "testbus_sel: 0x%lx Index: %d val: 0x%lx\n",
+			dev_info(dev, "testbus_sel: 0x%x Index: %d val: 0x%x\n",
 				 arm_smmu_debug_tcu_testbus_select(phys_addr,
 				 tcu_base, PTW_AND_CACHE_TESTBUS, READ, 0), i,
 				 arm_smmu_debug_tcu_testbus_output(phys_addr));
@@ -445,7 +445,7 @@ void arm_smmu_debug_dump_tcu_testbus(struct device *dev, phys_addr_t phys_addr,
 						TCU_PTW_TESTBUS_SEL2,
 						TCU_PTW_TESTBUS_SEL2 + 1, 0,
 						false);
-			dev_info(dev, "testbus_sel: 0x%lx Index: %d val: 0x%lx\n",
+			dev_info(dev, "testbus_sel: 0x%x Index: %d val: 0x%x\n",
 				 arm_smmu_debug_tcu_testbus_select(phys_addr,
 				 tcu_base, PTW_AND_CACHE_TESTBUS, READ, 0), i,
 				 arm_smmu_debug_tcu_testbus_output(phys_addr));
@@ -464,7 +464,7 @@ void arm_smmu_debug_dump_tcu_testbus(struct device *dev, phys_addr_t phys_addr,
 	/* program ARM_SMMU_TESTBUS_SEL_HLOS1_NS to select TCU clk testbus*/
 	arm_smmu_debug_tcu_testbus_select(phys_addr, tcu_base,
 			CLK_TESTBUS, WRITE, TCU_CLK_TESTBUS_SEL);
-	dev_info(dev, "Programming Tcu clk gate controller: testbus_sel: 0x%lx\n",
+	dev_info(dev, "Programming Tcu clk gate controller: testbus_sel: 0x%x\n",
 		arm_smmu_debug_tcu_testbus_select(phys_addr, tcu_base,
 						CLK_TESTBUS, READ, 0));
 }

@@ -124,7 +124,7 @@ static void usb_bypass_stop(struct byte_cntr *byte_cntr_data)
 	drop_rate = byte_cntr_data->tmcdrvdata->usb_data->drop_data_size;
 	drop_rate = drop_rate * 100 / (byte_cntr_data->total_size + drop_rate);
 	dev_info(&byte_cntr_data->tmcdrvdata->csdev->dev,
-		"Data input speed: %lldMB/s, Data output speed: %lldMB/s, drop_rate: %d%%\n",
+		"Data input speed: %lldMB/s, Data output speed: %lldMB/s, drop_rate: %llu%%\n",
 		byte_cntr_data->tmcdrvdata->usb_data->in_data_speed,
 		byte_cntr_data->tmcdrvdata->usb_data->out_data_speed,
 		drop_rate);
@@ -209,7 +209,7 @@ static int usb_transfer_small_packet(struct byte_cntr *drvdata, size_t *small_si
 			atomic_dec(&drvdata->usb_free_buf);
 		} else {
 			dev_err_ratelimited(&tmcdrvdata->csdev->dev,
-			"Drop data, offset = %d, len = %d\n",
+			"Drop data, offset = %lu, len = %zu\n",
 				drvdata->offset, req_size);
 			tmcdrvdata->usb_data->drop_data_size += actual;
 			kfree(usb_req);
@@ -354,7 +354,7 @@ static void usb_read_work_fn(struct work_struct *work)
 
 			} else {
 				dev_err_ratelimited(&tmcdrvdata->csdev->dev,
-				"Drop data, offset = %d, seq = %d, irq = %d\n",
+				"Drop data, offset = %lu, seq = %d, irq = %d\n",
 					drvdata->offset, seq,
 					atomic_read(&drvdata->irq_cnt));
 				tmcdrvdata->usb_data->drop_data_size += actual_total;

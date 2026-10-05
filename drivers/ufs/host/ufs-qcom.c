@@ -1819,7 +1819,7 @@ static void ufs_qcom_cpufreq_dwork(struct work_struct *work)
 			host->cur_freq_vote = false;
 		} else if (freq_val == host->cpu_info[i].min_cpu_scale_freq)
 			host->cur_freq_vote = false;
-		dev_dbg(host->hba->dev, "cur_freq_vote=%d,freq_val=%u,cth=%u,cpu=%u\n",
+		dev_dbg(host->hba->dev, "cur_freq_vote=%d,freq_val=%u,cth=%lu,cpu=%u\n",
 			host->cur_freq_vote, freq_val, cur_thres, host->cpu_info[i].cpu);
 	}
 
@@ -1834,8 +1834,8 @@ static int add_group_qos(struct qos_cpu_group *qcg, enum constraint type)
 	struct dev_pm_qos_request *qos_req = qcg->qos_req;
 
 	for_each_cpu(cpu, &qcg->mask) {
-		dev_dbg(qcg->host->hba->dev, "%s: cpu: %d | mask: 0x%08x | assoc-qos-req: 0x%08x\n",
-			__func__, cpu, qcg->mask, qos_req);
+		dev_dbg(qcg->host->hba->dev, "%s: cpu: %d | mask: %*pb | assoc-qos-req: %p\n",
+			__func__, cpu, cpumask_pr_args(&qcg->mask), qos_req);
 		memset(qos_req, 0,
 		       sizeof(struct dev_pm_qos_request));
 		err = dev_pm_qos_add_request(get_cpu_device(cpu),
@@ -2088,7 +2088,7 @@ static int __ufs_qcom_set_bus_vote(struct ufs_qcom_host *host, int vote)
 		return err;
 	}
 
-	dev_dbg(dev, "Setting vote: %d: ufs-ddr: ab: %llu ib: %llu\n", vote,
+	dev_dbg(dev, "Setting vote: %d: ufs-ddr: ab: %u ib: %u\n", vote,
 		path0.ab, path0.ib);
 	err = icc_set_bw(d->ufs_ddr, path0.ab, path0.ib);
 	if (err) {
@@ -2097,7 +2097,7 @@ static int __ufs_qcom_set_bus_vote(struct ufs_qcom_host *host, int vote)
 		return err;
 	}
 
-	dev_dbg(dev, "Setting: cpu-ufs: ab: %llu ib: %llu\n", path1.ab,
+	dev_dbg(dev, "Setting: cpu-ufs: ab: %u ib: %u\n", path1.ab,
 		path1.ib);
 	err = icc_set_bw(d->cpu_ufs, path1.ab, path1.ib);
 	if (err) {
@@ -2267,7 +2267,7 @@ static struct qcom_bus_scale_data *ufs_qcom_get_bus_scale_data(struct device
 				((tab & 0x00ff0000) >> 8) |
 				((tab & 0x0000ff00) << 8) | (tab << 24);
 
-			dev_dbg(dev, "ab: %llu ib:%llu [i]: %d [j]: %d\n",
+			dev_dbg(dev, "ab: %u ib:%u [i]: %d [j]: %d\n",
 				usecase[i].vec[j].ab, usecase[i].vec[j].ib, i,
 				j);
 		}
@@ -2311,14 +2311,14 @@ static int ufs_qcom_bus_register(struct ufs_qcom_host *host)
 
 	qsd->ufs_ddr = of_icc_get(dev, UFS_DDR);
 	if (IS_ERR(qsd->ufs_ddr)) {
-		dev_err(dev, "Error: (%d) failed getting %s path\n",
+		dev_err(dev, "Error: (%ld) failed getting %s path\n",
 			PTR_ERR(qsd->ufs_ddr), UFS_DDR);
 		return PTR_ERR(qsd->ufs_ddr);
 	}
 
 	qsd->cpu_ufs = of_icc_get(dev, CPU_UFS);
 	if (IS_ERR(qsd->cpu_ufs)) {
-		dev_err(dev, "Error: (%d) failed getting %s path\n",
+		dev_err(dev, "Error: (%ld) failed getting %s path\n",
 			PTR_ERR(qsd->cpu_ufs), CPU_UFS);
 		return PTR_ERR(qsd->cpu_ufs);
 	}
@@ -3340,13 +3340,13 @@ static int ufs_qcom_update_qos_constraints(struct qos_cpu_group *qcg,
 	else
 		vote = qcg->votes[type];
 
-	dev_dbg(qcg->host->hba->dev, "%s: qcg: 0x%08x | const: %d\n",
+	dev_dbg(qcg->host->hba->dev, "%s: qcg: %p | const: %d\n",
 		__func__, qcg, type);
 	if (qcg->curr_vote == vote)
 		return 0;
 	for_each_cpu(cpu, &qcg->mask) {
 		err = dev_pm_qos_update_request(qos_req, vote);
-		dev_dbg(qcg->host->hba->dev, "%s: vote: %d | cpu: %d | qos_req: 0x%08x\n",
+		dev_dbg(qcg->host->hba->dev, "%s: vote: %d | cpu: %d | qos_req: %p\n",
 			__func__, vote, cpu, qos_req);
 		if (err < 0)
 			return err;
@@ -3380,8 +3380,8 @@ static void ufs_qcom_qos(struct ufs_hba *hba, int tag)
 		atomic_inc(&host->num_reqs_threshold);
 
 	if (qcg->voted) {
-		dev_dbg(qcg->host->hba->dev, "%s: qcg: 0x%08x | Mask: 0x%08x - Already voted - return\n",
-			__func__, qcg, qcg->mask);
+		dev_dbg(qcg->host->hba->dev, "%s: qcg: %p | Mask: %*pb - Already voted - return\n",
+			__func__, qcg, cpumask_pr_args(&qcg->mask));
 		return;
 	}
 	queue_work(host->ufs_qos->workq, &qcg->vwork);
@@ -3419,8 +3419,8 @@ static int ufs_qcom_setup_qos(struct ufs_hba *hba)
 				return err;
 			goto free_mem;
 		}
-		dev_dbg(dev, "%s: qcg: 0x%08x | mask: 0x%08x | mask-wt: %d | qos_req: 0x%08x\n",
-			__func__, qcg, qcg->mask, cpumask_weight(&qcg->mask),
+		dev_dbg(dev, "%s: qcg: %p | mask: %*pb | mask-wt: %d | qos_req: %p\n",
+			__func__, qcg, cpumask_pr_args(&qcg->mask), cpumask_weight(&qcg->mask),
 			qcg->qos_req);
 		err = add_group_qos(qcg, S32_MAX);
 		if (err < 0) {
@@ -3567,7 +3567,7 @@ static void ufs_qcom_qos_init(struct ufs_hba *hba)
 
 		ufs_qcom_parse_cpu_freq_vote(group_node, hba);
 
-		dev_dbg(dev, "%s: qcg: 0x%08x\n", __func__, qcg);
+		dev_dbg(dev, "%s: qcg: %p\n", __func__, qcg);
 		qcg->host = host;
 		++qcg;
 	}
@@ -3705,7 +3705,7 @@ static int ufs_qcom_set_cur_therm_state(struct thermal_cooling_device *tcd,
 							 100);
 		break;
 	default:
-		dev_err(tcd->devdata, "Invalid UFS thermal state (%d)\n", data);
+		dev_err(tcd->devdata, "Invalid UFS thermal state (%lu)\n", data);
 		return -EINVAL;
 	}
 
@@ -3936,7 +3936,7 @@ static void ufs_qcom_register_minidump(uintptr_t vaddr, u64 size,
 	if (!msm_minidump_enabled())
 		return;
 
-	scnprintf(md_entry.name, sizeof(md_entry.name), "%s_%d",
+	scnprintf(md_entry.name, sizeof(md_entry.name), "%s_%llu",
 			buf_name, id);
 	md_entry.virt_addr = vaddr;
 	md_entry.phys_addr = virt_to_phys((void *)vaddr);
@@ -3991,7 +3991,8 @@ static int ufs_qcom_panic_handler(struct notifier_block *nb,
 	dev_err(hba->dev, "UFS SPM level = %d\n", hba->spm_lvl);
 
 	dev_err(hba->dev, "host_blocked=%d\n host_failed =%d\n Host self-block=%d\n",
-		hba->host->host_blocked, hba->host->host_failed, hba->host->host_self_blocked);
+		atomic_read(&hba->host->host_blocked), hba->host->host_failed,
+		hba->host->host_self_blocked);
 	dev_err(hba->dev, "............. ufs dump complete ..........\n");
 
 	return NOTIFY_OK;
@@ -4273,7 +4274,7 @@ static int ufs_qcom_init(struct ufs_hba *hba)
 							  dev,
 							  &ufs_thermal_ops);
 	if (IS_ERR(ut->tcd))
-		dev_warn(dev, "Thermal mitigation registration failed: %d\n",
+		dev_warn(dev, "Thermal mitigation registration failed: %ld\n",
 			 PTR_ERR(ut->tcd));
 	else
 		host->uqt.curr_state = UFS_QCOM_LVL_NO_THERM;
@@ -4634,7 +4635,7 @@ static void ufs_qcom_print_ber_hist(struct ufs_qcom_host *host)
 						p, h->uec_pa[p], h->err_code[p], h->gear[p],
 						ktime_to_us(h->tstamp[p]));
 		}
-		dev_err(host->hba->dev, "total %llu PA error on %s mode\n", h->cnt, h->name);
+		dev_err(host->hba->dev, "total %u PA error on %s mode\n", h->cnt, h->name);
 	}
 }
 

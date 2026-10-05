@@ -175,7 +175,7 @@ static ssize_t show_cur_freq(struct kobject *kobj,
 			cur_freq = max(cur_freq, path->percpu_cur_freqs[cpu]);
 	}
 
-	return scnprintf(buf, PAGE_SIZE, "%lu\n", cur_freq);
+	return scnprintf(buf, PAGE_SIZE, "%u\n", cur_freq);
 }
 
 static ssize_t show_available_frequencies(struct kobject *kobj,
@@ -185,7 +185,7 @@ static ssize_t show_available_frequencies(struct kobject *kobj,
 	int i, cnt = 0;
 
 	for (i = 0; i < hw->table_len; i++)
-		cnt += scnprintf(buf + cnt, PAGE_SIZE - cnt, "%lu ",
+		cnt += scnprintf(buf + cnt, PAGE_SIZE - cnt, "%u ",
 				hw->freq_table[i]);
 
 	if (cnt)

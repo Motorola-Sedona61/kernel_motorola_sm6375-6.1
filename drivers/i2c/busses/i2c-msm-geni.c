@@ -496,7 +496,7 @@ static inline void qcom_geni_i2c_calc_timeout(struct geni_i2c_dev *gi2c)
 							I2C_TIMEOUT_MIN_USEC;
 	gi2c->xfer_timeout = usecs_to_jiffies(xfer_max_usec);
 	I2C_LOG_DBG(gi2c->ipcl, false, gi2c->dev,
-		    "%s: us:%d jiffies:%d\n",
+		    "%s: us:%zu jiffies:%u\n",
 		    __func__, xfer_max_usec, gi2c->xfer_timeout);
 }
 

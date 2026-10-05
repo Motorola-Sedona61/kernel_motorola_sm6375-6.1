@@ -1980,7 +1980,7 @@ static int msm_pinctrl_hibernation_suspend(void)
     /* Save direction conn registers for hmss */
 	for (i = 0; i < soc->ntiles; i++) {
 		tile_addr = pctrl->regs[i] + soc->dir_conn_addr[i];
-		pr_err("The tile addr generated is 0x%lx\n", (u64)tile_addr);
+		pr_err("The tile addr generated is %p\n", tile_addr);
 		for (j = 0; j < 8; j++)
 			pctrl->msm_tile_regs[i].dir_con_regs[j] =
 				readl_relaxed(tile_addr + j*4);
@@ -2024,7 +2024,7 @@ static void msm_pinctrl_hibernation_resume(void)
 
 	for (i = 0; i < soc->ntiles; i++) {
 		tile_addr = pctrl->regs[i] + soc->dir_conn_addr[i];
-		pr_err("The tile addr generated is 0x%lx\n", (u64)tile_addr);
+		pr_err("The tile addr generated is %p\n", tile_addr);
 		for (j = 0; j < 8; j++)
 			writel_relaxed(pctrl->msm_tile_regs[i].dir_con_regs[j],
 					tile_addr + j*4);

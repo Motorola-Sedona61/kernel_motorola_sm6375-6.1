@@ -882,7 +882,7 @@ static int msm_init_cm_dll(struct sdhci_host *host,
 
 			mclk_freq = ROUND(dll_clock * cycle_cnt, TCXO_FREQ);
 			if (dll_clock < 100000000)
-				pr_err("%s: %s: Non standard clk freq =%u\n",
+				pr_err("%s: %s: Non standard clk freq =%lu\n",
 				mmc_hostname(mmc), __func__, dll_clock);
 			writel_relaxed(((readl_relaxed(host->ioaddr +
 				msm_offset->core_dll_config_2)
@@ -4521,8 +4521,8 @@ static int sdhci_msm_update_qos_constraints(struct qos_cpu_group *qcg,
 	if (qcg->curr_vote == vote)
 		return 0;
 
-	sdhci_msm_log_str(qcg->host, "mask: 0x%08x type: %d vote: %u\n",
-			qcg->mask, type, vote);
+	sdhci_msm_log_str(qcg->host, "mask: %*pb type: %d vote: %u\n",
+			cpumask_pr_args(&qcg->mask), type, vote);
 
 	for_each_cpu(cpu, &qcg->mask) {
 		err = dev_pm_qos_update_request(qos_req, vote);
@@ -4740,8 +4740,8 @@ static int sdhci_msm_setup_qos(struct sdhci_msm_host *msm_host)
 			goto free_mem;
 		}
 		qcg->initialized = true;
-		dev_dbg(&pdev->dev, "%s: qcg: 0x%08x | mask: 0x%08x\n",
-				 __func__, qcg, qcg->mask);
+		dev_dbg(&pdev->dev, "%s: qcg: %p | mask: %*pb\n",
+				 __func__, qcg, cpumask_pr_args(&qcg->mask));
 	}
 
 	/* Vote pmqos during setup for first set of mask*/

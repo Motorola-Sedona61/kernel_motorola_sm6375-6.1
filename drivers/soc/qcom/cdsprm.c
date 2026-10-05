@@ -1306,7 +1306,7 @@ static int cdsprm_resmgr_pdkill_override_write(void *data, u64 val)
 {
 	int result = cdsprm_resmgr_pdkill_config((unsigned int)val);
 
-	pr_info("resmgr pdkill override %d sent to NSP, returned %d\n", val, result);
+	pr_info("resmgr pdkill override %llu sent to NSP, returned %d\n", val, result);
 
 	return result;
 }
@@ -1688,7 +1688,7 @@ static void print_dcvs_clients_votes(void)
 				dcvs_client_p[i].ceng_params.perf_mode ? "LOW" : "HIGH");
 
 		if (dcvs_client_p[i].ceng_params.bwBytePerSec)
-			pr_info("    Q6->CENG BW : %u bytes per second, Q6->CENG BW Usage Percentage : %u\n",
+			pr_info("    Q6->CENG BW : %llu bytes per second, Q6->CENG BW Usage Percentage : %u\n",
 					dcvs_client_p[i].ceng_params.bwBytePerSec,
 					dcvs_client_p[i].ceng_params.busbwUsagePercentage);
 

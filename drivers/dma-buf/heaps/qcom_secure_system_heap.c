@@ -133,7 +133,7 @@ static struct sg_table *get_pages(u64 size, struct dma_heap *heap)
 							     false);
 
 		if (!page) {
-			pr_err("%s: Failed to get pages from the system heap: %d, %d!\n",
+			pr_err("%s: Failed to get pages from the system heap: %lu, %llu!\n",
 			       __func__, size_remaining, size);
 			ret = -ENOMEM;
 			goto err;
@@ -662,7 +662,7 @@ int qcom_secure_system_heap_restore(void)
 		sys_heap->pool_list = dynamic_page_pool_create_pools(sys_heap->vmid,
 					free_secure_pages);
 		if (IS_ERR(sys_heap->pool_list)) {
-			pr_err("%s: Pool creation failed for VMID: %d, err: %d\n",
+			pr_err("%s: Pool creation failed for VMID: %d, err: %ld\n",
 				__func__, sys_heap->vmid,
 				PTR_ERR(sys_heap->pool_list));
 		}
@@ -751,7 +751,7 @@ void qcom_secure_system_heap_create(const char *name, const char *secure_system_
 
 		heap = dma_heap_add(&exp_info);
 		if (IS_ERR(heap)) {
-			pr_err("%s: Failed to create '%s', error is %d\n", __func__,
+			pr_err("%s: Failed to create '%s', error is %ld\n", __func__,
 			       secure_system_alias, PTR_ERR(heap));
 			return;
 		}

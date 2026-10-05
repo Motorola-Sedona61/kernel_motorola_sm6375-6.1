@@ -2860,7 +2860,7 @@ static int qcom_scm_query_wq_queue_info(struct qcom_scm *scm)
 	scm->waitq.irq = res.result[1] & 0xFFFF;
 	scm->waitq.wq_feature = QCOM_SCM_MULTI_SMC_WHITE_LIST_ALLOW;
 
-	pr_info("WQ Info, feature: %d call_ctx_cnt: %d irq: %d\n",
+	pr_info("WQ Info, feature: %u call_ctx_cnt: %llu irq: %llu\n",
 		scm->waitq.wq_feature, scm->waitq.call_ctx_cnt, scm->waitq.irq);
 
 	return ret;
@@ -2949,7 +2949,7 @@ static void scm_irq_work(struct work_struct *work)
 
 		wq_to_wake = qcom_scm_lookup_wq(scm, wq_ctx);
 		if (IS_ERR_OR_NULL(wq_to_wake)) {
-			pr_err("No waitqueue found for wq_ctx %d: %d\n",
+			pr_err("No waitqueue found for wq_ctx %d: %ld\n",
 					wq_ctx, PTR_ERR(wq_to_wake));
 			return;
 		}
@@ -3045,7 +3045,7 @@ int  scm_mem_protection_init_do(void)
 	pid_offset = offsetof(struct task_struct, pid);
 	task_name_offset = offsetof(struct task_struct, comm);
 
-	pr_debug("offset of pid is %zu, offset of comm is %zu\n",
+	pr_debug("offset of pid is %u, offset of comm is %u\n",
 			pid_offset, task_name_offset);
 	desc.args[0] = pid_offset,
 	desc.args[1] = task_name_offset,

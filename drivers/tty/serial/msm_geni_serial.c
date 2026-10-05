@@ -756,7 +756,7 @@ static void msm_geni_enable_disable_se_clk(struct uart_port *uport, bool enable)
 	struct msm_geni_serial_port *msm_port = GET_DEV_PORT(uport);
 
 	UART_LOG_DBG(msm_port->ipc_log_misc, msm_port->uport.dev,
-		"%s: enable:%d ser_clk_cfg:0x%x\n", __func__, enable,
+		"%s: enable:%d ser_clk_cfg:0x%lx\n", __func__, enable,
 		msm_port->ser_clk_cfg);
 
 	if (enable) {

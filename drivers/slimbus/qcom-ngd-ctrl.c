@@ -1114,8 +1114,8 @@ static int qcom_slim_ngd_xfer_msg(struct slim_controller *sctrl,
 
 	timeout = wait_for_completion_timeout(&tx_sent, 2*HZ);
 	if (!timeout) {
-		SLIM_ERR(ctrl, "%s: TX timed out:MC:0x%x,mt:0x%x", txn->mc,
-			 __func__, txn->mt);
+		SLIM_ERR(ctrl, "%s: TX timed out:MC:0x%x,mt:0x%x", __func__,
+			 txn->mc, txn->mt);
 		mutex_unlock(&ctrl->tx_lock);
 		ctrl->capability_timeout = true;
 		txn->comp = NULL;
@@ -1168,8 +1168,8 @@ static int qcom_slim_ngd_xfer_msg_sync(struct slim_controller *ctrl,
 
 	timeout = wait_for_completion_timeout(&dev->sync_done, HZ);
 	if (!timeout) {
-		SLIM_ERR(dev, "%s: TX sync timed out:MC:0x%x,mt:0x%x", txn->mc,
-			 __func__, txn->mt);
+		SLIM_ERR(dev, "%s: TX sync timed out:MC:0x%x,mt:0x%x", __func__,
+			 txn->mc, txn->mt);
 		ret = -ETIMEDOUT;
 		goto err;
 	}

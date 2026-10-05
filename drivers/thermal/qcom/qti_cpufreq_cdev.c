@@ -140,7 +140,7 @@ static void cpufreq_cdev_register(struct work_struct *work)
 	cdev_data->cdev = thermal_cooling_device_register(cdev_data->cdev_name,
 						cdev_data, &cpufreq_cdev_ops);
 	if (IS_ERR(cdev_data->cdev)) {
-		pr_err("Cdev register failed for %s, ret:%d\n",
+		pr_err("Cdev register failed for %s, ret:%ld\n",
 			cdev_data->cdev_name, PTR_ERR(cdev_data->cdev));
 		freq_qos_remove_request(&cdev_data->qos_max_freq_req);
 		goto error_exit;

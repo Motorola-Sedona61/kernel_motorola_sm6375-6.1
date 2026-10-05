@@ -624,9 +624,9 @@ static int bam_alloc_chan(struct dma_chan *chan)
 		bdev->r_mem.r_res->start = bdev->r_mem.r_res->start + (MSM_SLIM_DESC_NUM * 8);
 
 		DMA_BAM_DBG(bdev->ipc_log_dma, bdev->dev,
-			    "dma_bam:%s: r_mem_virt_base:%x r_mem_start:%x\n",
+			    "dma_bam:%s: r_mem_virt_base:%p r_mem_start:%pa\n",
 			    __func__, bdev->r_mem.r_vbase,
-			    bdev->r_mem.r_res->start);
+			    &bdev->r_mem.r_res->start);
 	}
 
 	if (!bchan->fifo_virt) {

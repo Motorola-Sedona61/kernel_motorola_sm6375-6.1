@@ -471,7 +471,7 @@ static ssize_t glink_pkt_read(struct file *file,
 		return -ENETRESET;
 	}
 
-	GLINK_PKT_INFO("begin for %s by %s:%d ref_cnt[%d], remaining[%d], count[%d]\n",
+	GLINK_PKT_INFO("begin for %s by %s:%d ref_cnt[%d], remaining[%zu], count[%zu]\n",
 		       gpdev->ch_name, current->comm,
 		       task_pid_nr(current), refcount_read(&gpdev->refcount),
 			   gpdev->rdata_len, count);
@@ -534,7 +534,7 @@ static ssize_t glink_pkt_read(struct file *file,
 	mutex_unlock(&gpdev->rskb_read_lock);
 
 	ret = (ret < 0) ? ret : use;
-	GLINK_PKT_INFO("end for %s by %s:%d ret[%d], remaining[%d]\n", gpdev->ch_name,
+	GLINK_PKT_INFO("end for %s by %s:%d ret[%d], remaining[%zu]\n", gpdev->ch_name,
 		       current->comm, task_pid_nr(current), ret, gpdev->rdata_len);
 
 	return ret;

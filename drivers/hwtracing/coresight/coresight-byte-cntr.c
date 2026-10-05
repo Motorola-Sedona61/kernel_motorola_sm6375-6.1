@@ -228,7 +228,7 @@ static int tmc_etr_byte_cntr_release(struct inode *in, struct file *fp)
 
 	disable_irq_wake(byte_cntr_data->byte_cntr_irq);
 
-	dev_dbg(dev, "send data total size: %lld bytes, irq_cnt: %lld, offset: %lld rwp_offset: %lld\n",
+	dev_dbg(dev, "send data total size: %lld bytes, irq_cnt: %lld, offset: %lu rwp_offset: %lu\n",
 		byte_cntr_data->total_size, byte_cntr_data->total_irq,
 		byte_cntr_data->offset,	byte_cntr_data->rwp_offset);
 	mutex_unlock(&byte_cntr_data->byte_cntr_lock);

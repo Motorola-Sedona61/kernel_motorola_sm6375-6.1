@@ -3090,7 +3090,7 @@ static void gpi_noop_tre(struct gpii_chan *gpii_chan)
 	while (local_rp != local_wp) {
 		/* dump the channel ring at the time of error */
 		tre = (struct msm_gpi_tre *)cntxt_rp;
-		GPII_ERR(gpii, gpii_chan->chid, "local_rp:0x%011x TRE: %08x %08x %08x %08x\n",
+		GPII_ERR(gpii, gpii_chan->chid, "local_rp:0x%011llx TRE: %08x %08x %08x %08x\n",
 			local_rp, tre->dword[0], tre->dword[1],
 			 tre->dword[2], tre->dword[3]);
 		tre->dword[3] &= noop_mask;

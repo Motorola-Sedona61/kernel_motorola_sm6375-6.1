@@ -31,7 +31,7 @@ TRACE_EVENT(lpm_gov_select,
 		       __entry->reason = reason;
 	),
 
-	TP_printk("state:%d qos-us:%lld sleep-us:%llu reason:%#x",
+	TP_printk("state:%d qos-us:%lld sleep-us:%llu reason:%#llx",
 		  __entry->idx, __entry->qos, __entry->sleep, __entry->reason)
 );
 
@@ -53,7 +53,7 @@ TRACE_EVENT(gov_pred_select,
 		__entry->tmr_time = tmr_time;
 	),
 
-	TP_printk("pred:%u time:%lu tmr_time:%u",
+	TP_printk("pred:%u time:%llu tmr_time:%u",
 		__entry->predtype, __entry->predicted, __entry->tmr_time)
 );
 

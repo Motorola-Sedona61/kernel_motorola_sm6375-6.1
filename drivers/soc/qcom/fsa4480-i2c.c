@@ -127,7 +127,7 @@ static int fsa4480_usbc_event_changed_ucsi(struct fsa4480_priv *fsa_priv,
 	if (!dev)
 		return -EINVAL;
 
-	dev_info(dev, "%s: USB change event received, supply mode %d, usbc mode %ld, expected %d\n",
+	dev_info(dev, "%s: USB change event received, supply mode %d, usbc mode %d, expected %d\n",
 			__func__, acc, fsa_priv->usbc_mode.counter,
 			TYPEC_ACCESSORY_AUDIO);
 

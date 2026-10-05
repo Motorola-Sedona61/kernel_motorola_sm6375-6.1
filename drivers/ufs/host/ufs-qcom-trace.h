@@ -315,7 +315,7 @@ DECLARE_EVENT_CLASS(ufs_qcom_pm_template,
 	),
 
 	TP_printk(
-		"%s: pm_op = %s, rpm_lvl = %d, spm_lvl = %d, link_state = %s, dev_pwr_mode = %d, err = %d",
+		"%s: pm_op = %s, rpm_lvl = %d, spm_lvl = %d, link_state = %s, dev_pwr_mode = %s, err = %d",
 		__get_str(dev_name),
 		__print_symbolic(__entry->pm_op, UFS_PM_OP),
 		__entry->rpm_lvl,

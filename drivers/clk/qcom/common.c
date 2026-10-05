@@ -59,7 +59,7 @@ int qcom_clk_crm_init(struct device *dev, struct clk_crm *crm)
 		if (crm->name) {
 			crm->dev = crm_get_device(crm->name);
 			if (IS_ERR(crm->dev)) {
-				pr_err("%s Failed to get crm dev=%s, ret=%d\n",
+				pr_err("%s Failed to get crm dev=%s, ret=%ld\n",
 				       __func__, crm->name, PTR_ERR(crm->dev));
 				return PTR_ERR(crm->dev);
 			}

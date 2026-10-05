@@ -51,7 +51,7 @@ static int devfreq_cdev_set_state(struct thermal_cooling_device *cdev,
 	pr_debug("cdev:%s Limit:%lu\n", cdev->type, freq);
 	ret = dev_pm_qos_update_request(&cdev_data->qos_max_freq_req, freq);
 	if (ret < 0) {
-		pr_err("Error placing qos request:%u. cdev:%s err:%d\n",
+		pr_err("Error placing qos request:%lu. cdev:%s err:%d\n",
 				freq, cdev->type, ret);
 		return ret;
 	}
@@ -125,7 +125,7 @@ static void devfreq_cdev_work(struct work_struct *work)
 		dev_pm_opp_put(opp);
 
 		freq_table[i] = DIV_ROUND_UP(freq, 1000); //hz to khz
-		pr_debug("%d. freq table:%d\n", i, freq_table[i]);
+		pr_debug("%d. freq table:%lu\n", i, freq_table[i]);
 	}
 	cdev_data->max_state = freq_ct-1;
 	cdev_data->freq_table = freq_table;
@@ -138,7 +138,7 @@ static void devfreq_cdev_work(struct work_struct *work)
 	cdev_data->cdev = thermal_cooling_device_register(DEVFREQ_CDEV_NAME,
 						cdev_data, &devfreq_cdev_ops);
 	if (IS_ERR(cdev_data->cdev)) {
-		pr_err("Cdev register failed for gpu, ret:%d\n",
+		pr_err("Cdev register failed for gpu, ret:%ld\n",
 			PTR_ERR(cdev_data->cdev));
 		cdev_data->cdev = NULL;
 		goto qos_exit;
