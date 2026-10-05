@@ -10,7 +10,8 @@
 #include "audio_ssr.h"
 
 static char *audio_ssr_domains[] = {
-	"adsp",
+	/* Match qcom_q6v5_pas's Blair SSR subdevice names. */
+	"lpass",
 	"mpss"
 };
 

@@ -1545,7 +1545,9 @@ static int adsp_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 
-	rproc->recovery_disabled = true;
+	/* Board opt-in: retained APR clients expect ADSP SSR to restart it. */
+	rproc->recovery_disabled = !of_property_read_bool(pdev->dev.of_node,
+							 "qcom,auto-recovery");
 	rproc->auto_boot = desc->auto_boot;
 	if (desc->uses_elf64)
 		rproc_coredump_set_elf_info(rproc, ELFCLASS64, EM_NONE);
@@ -1567,7 +1569,7 @@ static int adsp_probe(struct platform_device *pdev)
 	adsp->qmp_name = desc->qmp_name;
 	adsp->dma_phys_below_32b = desc->dma_phys_below_32b;
 	adsp->both_dumps = desc->both_dumps;
-	adsp->subsys_recovery_disabled = true;
+	adsp->subsys_recovery_disabled = rproc->recovery_disabled;
 	adsp->check_status = desc->check_status;
 
 	if (desc->free_after_auth_reset) {

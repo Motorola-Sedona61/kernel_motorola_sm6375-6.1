@@ -53,6 +53,11 @@
 &pil_ipa_gsi_mem { reg = <0x0 0x8aa10000 0x0 0x0000a000>; };
 &pil_gpu_micro_code_mem { reg = <0x0 0x8aa1a000 0x0 0x00002000>; };
 
+/* The retained audio loader's SSR request uses remoteproc crash recovery. */
+&adsp_pas {
+	qcom,auto-recovery;
+};
+
 /* Preserve the fogos contiguous audio pool for clients without an SMMU. */
 / {
 	reserved-memory {
