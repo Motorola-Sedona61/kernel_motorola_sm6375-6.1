@@ -1,0 +1,54 @@
+/* Copyright (c) 2023, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/dts-v1/;
+
+#include "blair.dtsi"
+#include "holi-audio.dtsi"
+#include "display/blair-sde.dtsi"
+#include "camera/blair-camera.dtsi"
+
+/ {
+	qcom,board-id = <0 0>;
+	channel-id-map = "";
+/*
+ * Some nodes need labels assigned to appear in __symbols__
+ */
+	chosen: chosen { };
+	aliases: aliases { };
+	reserved_memory: reserved-memory { };
+	mot_batterydata: qcom,battery-data { };
+	utags: utags { };
+	hw: hw { };
+};
+
+&reserved_memory {
+        /delete-node/ ramoops;
+};
+
+&tlmm {
+	/delete-node/ nfc;
+};
+
+&firmware {
+        /delete-node/ android;
+};
+
+&mdss_dsi_phy0 {
+	/delete-property/ qcom,dsi-pll-ssc-en;
+};
+
+/* Firmware carveouts follow fogos, not malmo's enlarged video reservation. */
+&pil_video_mem { reg = <0x0 0x8a500000 0x0 0x00500000>; };
+&pil_ipa_fw_mem { reg = <0x0 0x8aa00000 0x0 0x00010000>; };
+&pil_ipa_gsi_mem { reg = <0x0 0x8aa10000 0x0 0x0000a000>; };
+&pil_gpu_micro_code_mem { reg = <0x0 0x8aa1a000 0x0 0x00002000>; };
