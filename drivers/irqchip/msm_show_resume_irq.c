@@ -166,9 +166,9 @@ static struct syscore_ops gic_syscore_ops = {
 static int msm_show_resume_probe(struct platform_device *pdev)
 {
 	base = of_iomap(pdev->dev.of_node, 0);
-	if (IS_ERR(base)) {
-		pr_err("%pOF: error %d: unable to map GICD registers\n",
-				pdev->dev.of_node, PTR_ERR(base));
+	if (!base) {
+		pr_err("%pOF: unable to map GICD registers\n",
+				pdev->dev.of_node);
 		return -ENXIO;
 	}
 
