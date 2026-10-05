@@ -289,7 +289,7 @@ static int wcd938x_init_reg(struct snd_soc_component *component)
 	snd_soc_component_update_bits(component,
 				WCD938X_TX_3_4_TEST_BLK_EN2, 0x01, 0x00);
 	snd_soc_component_update_bits(component, WCD938X_SLEEP_CTL, 0x0E,
-				((snd_soc_component_read32(component,
+				((snd_soc_component_read(component,
 				WCD938X_DIGITAL_EFUSE_REG_30) & 0x07) << 1));
 	snd_soc_component_update_bits(component,
 				WCD938X_HPH_SURGE_HPHLR_SURGE_EN, 0xC0, 0xC0);
@@ -590,7 +590,7 @@ static int wcd938x_codec_hphl_dac_event(struct snd_soc_dapm_widget *w,
 				WCD938X_DIGITAL_CDC_COMP_CTL_0, 0x02, 0x02);
 			/* 5msec compander delay as per HW requirement */
 			if (!wcd938x->comp2_enable ||
-				(snd_soc_component_read32(component,
+				(snd_soc_component_read(component,
 					WCD938X_DIGITAL_CDC_COMP_CTL_0) & 0x01))
 			usleep_range(5000, 5010);
 			snd_soc_component_update_bits(component,
@@ -642,7 +642,7 @@ static int wcd938x_codec_hphr_dac_event(struct snd_soc_dapm_widget *w,
 				WCD938X_DIGITAL_CDC_COMP_CTL_0, 0x01, 0x01);
 			/* 5msec compander delay as per HW requirement */
 			if (!wcd938x->comp1_enable ||
-				(snd_soc_component_read32(component,
+				(snd_soc_component_read(component,
 					WCD938X_DIGITAL_CDC_COMP_CTL_0) & 0x02))
 				usleep_range(5000, 5010);
 			snd_soc_component_update_bits(component,
@@ -679,7 +679,7 @@ static int wcd938x_codec_ear_dac_event(struct snd_soc_dapm_widget *w,
 	case SND_SOC_DAPM_PRE_PMU:
 		wcd938x_rx_clk_enable(component);
 		wcd938x->ear_rx_path =
-			snd_soc_component_read32(
+			snd_soc_component_read(
 				component, WCD938X_DIGITAL_CDC_EAR_PATH_CTL);
 		if (wcd938x->ear_rx_path & EAR_RX_PATH_AUX) {
 			snd_soc_component_update_bits(component,
@@ -1135,7 +1135,7 @@ static int wcd938x_codec_enable_ear_pa(struct snd_soc_dapm_widget *w,
 		 * depending on mux value
 		 */
 		wcd938x->ear_rx_path =
-			snd_soc_component_read32(
+			snd_soc_component_read(
 				component, WCD938X_DIGITAL_CDC_EAR_PATH_CTL);
 		if (wcd938x->ear_rx_path & EAR_RX_PATH_AUX)
 			snd_soc_component_update_bits(component,
@@ -1363,6 +1363,7 @@ static int wcd938x_codec_enable_dmic(struct snd_soc_dapm_widget *w,
 		break;
 	case 2:
 		dmic2_left_en = WCD938X_DIGITAL_CDC_DMIC2_CTL;
+		fallthrough;
 	case 3:
 		dmic_clk_cnt = &(wcd938x->dmic_2_3_clk_cnt);
 		dmic_clk_reg = WCD938X_DIGITAL_CDC_DMIC_RATE_1_2;
@@ -1497,7 +1498,7 @@ int wcd938x_mbhc_micb_adjust_voltage(struct snd_soc_component *component,
 	 * momentarily, change the micbias value and then re-enable
 	 * micbias.
 	 */
-	micb_val = snd_soc_component_read32(component, micb_reg);
+	micb_val = snd_soc_component_read(component, micb_reg);
 	micb_en = (micb_val & 0xC0) >> 6;
 	cur_vout_ctl = micb_val & 0x3F;
 
@@ -1559,7 +1560,7 @@ static int wcd938x_tx_swr_ctrl(struct snd_soc_dapm_widget *w,
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
 		/* Check AMIC2 is connected to ADC2 to take an action on BCS */
-		if (w->shift == ADC2 && !(snd_soc_component_read32(component,
+		if (w->shift == ADC2 && !(snd_soc_component_read(component,
 			WCD938X_TX_NEW_AMIC_MUX_CFG) & 0x80)) {
 			if (!wcd938x->bcs_dis)
 				wcd938x_tx_connect_port(component, MBHC,
@@ -2086,7 +2087,7 @@ static bool get_usbc_hs_status(struct snd_soc_component *component,
 			struct wcd_mbhc_config *mbhc_cfg)
 {
 	if (mbhc_cfg->enable_usbc_analog) {
-		if (!(snd_soc_component_read32(component, WCD938X_ANA_MBHC_MECH)
+		if (!(snd_soc_component_read(component, WCD938X_ANA_MBHC_MECH)
 			& 0x20))
 			return true;
 	}
@@ -2639,7 +2640,7 @@ static int wcd938x_ear_pa_gain_get(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component =
 				snd_soc_kcontrol_component(kcontrol);
 
-	ear_pa_gain = snd_soc_component_read32(component,
+	ear_pa_gain = snd_soc_component_read(component,
 				WCD938X_ANA_EAR_COMPANDER_CTL);
 
 	ear_pa_gain = (ear_pa_gain & 0x7C) >> 2;
@@ -2893,7 +2894,7 @@ static int wcd938x_tx_master_ch_put(struct snd_kcontrol *kcontrol,
 		return -EINVAL;
 
 	dev_dbg(component->dev, "%s: slave_ch_idx: %d", __func__, slave_ch_idx);
-	dev_dbg(component->dev, "%s: ucontrol->value.enumerated.item[0] = %ld\n",
+	dev_dbg(component->dev, "%s: ucontrol->value.enumerated.item[0] = %u\n",
 			__func__, ucontrol->value.enumerated.item[0]);
 
 	idx = ucontrol->value.enumerated.item[0];
@@ -3861,7 +3862,7 @@ static int wcd938x_soc_codec_probe(struct snd_soc_component *component)
 	wcd938x->component = component;
 	snd_soc_component_init_regmap(component, wcd938x->regmap);
 
-	variant = (snd_soc_component_read32(component,
+	variant = (snd_soc_component_read(component,
 			WCD938X_DIGITAL_EFUSE_REG_0) & 0x1E) >> 1;
 	wcd938x->variant = variant;
 

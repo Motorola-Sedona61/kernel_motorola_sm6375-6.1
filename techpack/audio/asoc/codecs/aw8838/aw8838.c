@@ -466,7 +466,7 @@ static int aw8838_load_cfg(struct aw8838 *aw8838)
 {
     pr_info("%s enter\n", __func__);
 
-    return request_firmware_nowait(THIS_MODULE, FW_ACTION_HOTPLUG,
+    return request_firmware_nowait(THIS_MODULE, true,
             aw8838_cfg_name, aw8838->dev, GFP_KERNEL,
             aw8838, aw8838_cfg_loaded);
 }
@@ -914,7 +914,7 @@ static struct snd_soc_dai_driver aw8838_dai[] = {
             .formats = AW8838_FORMATS,
          },
         .ops = &aw8838_dai_ops,
-        .symmetric_rates = 1,
+        .symmetric_rate = 1,
         .symmetric_channels = 1,
         .symmetric_samplebits = 1,
     },

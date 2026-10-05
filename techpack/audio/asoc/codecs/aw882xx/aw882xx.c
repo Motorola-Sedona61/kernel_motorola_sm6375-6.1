@@ -571,7 +571,6 @@ static int aw882xx_get_cali_re_from_nv(uint32_t *cali_re)
 	char buf[CALI_BUF_MAX];
 	uint32_t read_re;
 	loff_t pos = 0;
-	mm_segment_t fs;
 
 	memset(buf, 0, CALI_BUF_MAX);
 	/*open cali file*/
@@ -581,8 +580,6 @@ static int aw882xx_get_cali_re_from_nv(uint32_t *cali_re)
 		return -EINVAL;
 	}
 	/*set fs kernel*/
-	fs = get_fs();
-	set_fs(KERNEL_DS);
 
 	/*read file*/
 	kernel_read(fp, buf, CALI_BUF_MAX - 1, &pos);
@@ -590,11 +587,9 @@ static int aw882xx_get_cali_re_from_nv(uint32_t *cali_re)
 	/*get cali re value*/
 	if (sscanf(buf, "%d", &read_re) != 1) {
 		pr_err("%s: file read error", __func__);
-		set_fs(fs);
 		filp_close(fp, NULL);
 		return -EINVAL;
 	}
-	set_fs(fs);
 
 	/*close file*/
 	filp_close(fp, NULL);
@@ -696,7 +691,7 @@ static int aw882xx_load_reg(struct aw882xx *aw882xx)
 {
 	pr_info("%s: enter\n", __func__);
 
-	return request_firmware_nowait(THIS_MODULE, FW_ACTION_HOTPLUG,
+	return request_firmware_nowait(THIS_MODULE, true,
 		aw882xx_cfg_name[aw882xx->cfg_num],
 		aw882xx->dev, GFP_KERNEL,
 		aw882xx, aw882xx_reg_loaded);
@@ -1643,7 +1638,7 @@ static struct snd_soc_dai_driver aw882xx_dai[] = {
 			.formats = AW882XX_FORMATS,
 		 },
 		.ops = &aw882xx_dai_ops,
-		.symmetric_rates = 1,
+		.symmetric_rate = 1,
 #if 0
 		.symmetric_channels = 1,
 		.symmetric_samplebits = 1,
@@ -3632,11 +3627,7 @@ err_register_codec:
 	dai = NULL;
 err_dai_kzalloc:
 err_id:
-	if (gpio_is_valid(aw882xx->irq_gpio))
-		devm_gpio_free(&i2c->dev, aw882xx->irq_gpio);
 err_irq_gpio_request:
-	if (gpio_is_valid(aw882xx->reset_gpio))
-		devm_gpio_free(&i2c->dev, aw882xx->reset_gpio);
 err_reset_gpio_request:
 err_parse_dt:
 	devm_kfree(&i2c->dev, aw882xx);
@@ -3645,7 +3636,7 @@ err_parse_dt:
 	return ret;
 }
 
-static int aw882xx_i2c_remove(struct i2c_client *i2c)
+static void aw882xx_i2c_remove(struct i2c_client *i2c)
 {
 	struct aw882xx *aw882xx = i2c_get_clientdata(i2c);
 
@@ -3658,15 +3649,11 @@ static int aw882xx_i2c_remove(struct i2c_client *i2c)
 
 	snd_soc_unregister_component(&i2c->dev);
 
-	if (gpio_is_valid(aw882xx->irq_gpio))
-		devm_gpio_free(&i2c->dev, aw882xx->irq_gpio);
-	if (gpio_is_valid(aw882xx->reset_gpio))
-		devm_gpio_free(&i2c->dev, aw882xx->reset_gpio);
 
 	devm_kfree(&i2c->dev, aw882xx);
 	aw882xx = NULL;
 	g_aw882xx = NULL;
-	return 0;
+	return;
 }
 
 static const struct i2c_device_id aw882xx_i2c_id[] = {

@@ -1003,7 +1003,6 @@ int fsm_parse_preset(const void *data, uint32_t size)
 int fsm_swap_channel(fsm_dev_t *fsm_dev, int next_angle)
 {
 	uint16_t left_chn;
-	uint8_t i2sctrl;
 	uint16_t chs12;
 	int ret = 0;
 
@@ -1036,10 +1035,8 @@ int fsm_swap_channel(fsm_dev_t *fsm_dev, int next_angle)
 		chs12 = 3;
 	}
 	if (fsm_dev->is1958) {
-		i2sctrl = 0x17;
 		ret = fsm_set_bf(fsm_dev, 0x1317, chs12); // 0x17[4..3]
 	} else {
-		i2sctrl = 0x04;
 		ret = fsm_set_bf(fsm_dev, 0x1304, chs12); // 0x04[4..3]
 	}
 	pr_addr(debug, "pos:%02X, CHS12:%d", fsm_dev->pos_mask, chs12);
@@ -1114,7 +1111,7 @@ int fsm_get_rstrim(fsm_dev_t *fsm_dev)
 	ret = fsm_reg_read(fsm_dev, reg_rstrim, &value);
 	fsm_access_key(fsm_dev, 0);
 	if (ret || value == 0) {
-		pr_warning("use default rs_trim value");
+		pr_warn("use default rs_trim value");
 		value = FSM_RS_TRIM_DEFAULT;
 	}
 	fsm_dev->rstrim = value;
@@ -1365,7 +1362,7 @@ void fsm_set_volume(int volume)
 	}
 	fsm_mutex_lock();
 	if (volume < 0 || volume > FSM_VOLUME_MAX) {
-		pr_warning("invalid volume: %d, default 0dB", volume);
+		pr_warn("invalid volume: %d, default 0dB", volume);
 		volume = FSM_VOLUME_MAX;
 	}
 	cfg->volume = volume;
@@ -1708,7 +1705,7 @@ void fsm_add_card_controls(struct snd_soc_card *card)
 }
 EXPORT_SYMBOL_GPL(fsm_add_card_controls);
 
-static int fsm_check_scene_status()
+static int fsm_check_scene_status(void)
 {
 	fsm_config_t *cfg = fsm_get_config();
 	if(cfg->speaker_on && cfg->next_scene == FSM_SCENE_MUSIC){

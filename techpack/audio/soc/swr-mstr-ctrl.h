@@ -9,7 +9,6 @@
 #include <linux/module.h>
 #include <soc/swr-wcd.h>
 #include <linux/pm_qos.h>
-#include <soc/qcom/pm.h>
 #include <soc/swr-common.h>
 
 #ifdef CONFIG_DEBUG_FS

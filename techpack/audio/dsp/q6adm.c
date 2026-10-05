@@ -4,6 +4,7 @@
  * Copyright (c) 2022-2023, 2025 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 #include <linux/module.h>
+#include <dsp/audio_scm.h>
 #include <linux/slab.h>
 #include <linux/wait.h>
 #include <linux/sched.h>
@@ -2566,11 +2567,11 @@ static void send_adm_cal_type(int fedai_id, int cal_index, int path, int port_id
 			ret = -EINVAL;
 			goto unlock;
 		}
-		ret = hyp_assign_phys(cal_block->cal_data.paddr,
+		ret = audio_hyp_assign_phys(cal_block->cal_data.paddr,
 				      cal_block->map_data.map_size,
 				      source_vm, 1, dest_vm, dest_perms, 2);
 		if (ret < 0) {
-			pr_err("%s: hyp_assign_phys failed result = %d addr = 0x%pK size = %d\n",
+			pr_err("%s: hyp_assign_phys failed result = %d addr = 0x%llx size = %zu\n",
 				__func__, ret, cal_block->cal_data.paddr,
 				cal_block->map_data.map_size);
 			ret = -EINVAL;
@@ -3963,6 +3964,7 @@ static void route_set_opcode_matrix_id(
 			break;
 		}
 		/* fall through to set matrix id for non-listen case */
+		fallthrough;
 	case ADM_PATH_NONLIVE_REC:
 		route->hdr.opcode = ADM_CMD_MATRIX_MAP_ROUTINGS_V5;
 		route->matrix_id = ADM_MATRIX_ID_AUDIO_TX;
@@ -4405,13 +4407,13 @@ int adm_close(int port_id, int perf_mode, int copp_idx)
 										__func__, cal_index, ret);
 							cal_block->map_data.q6map_handle = 0;
 						}
-						ret = hyp_assign_phys(
+						ret = audio_hyp_assign_phys(
 							cal_block->cal_data.paddr,
 							cal_block->map_data.map_size,
 							source_vm, 2, dest_vm,
 							dest_perms, 1);
 						if (ret < 0) {
-							pr_err("%s: hyp_assign_phys failed result = %d addr = 0x%pK size = %d\n",
+							pr_err("%s: hyp_assign_phys failed result = %d addr = 0x%llx size = %zu\n",
 								__func__, ret,
 								cal_block->cal_data.paddr,
 								cal_block->map_data.map_size);
@@ -4472,12 +4474,12 @@ int adm_close(int port_id, int perf_mode, int copp_idx)
 								__func__, cal_index, ret);
 					cal_block->map_data.q6map_handle = 0;
 				}
-				ret = hyp_assign_phys(cal_block->cal_data.paddr,
+				ret = audio_hyp_assign_phys(cal_block->cal_data.paddr,
 						cal_block->map_data.map_size,
 						source_vm, 2, dest_vm,
 						dest_perms, 1);
 				if (ret < 0) {
-					pr_err("%s: hyp_assign_phys failed result = %d addr = 0x%pK size = %d\n",
+					pr_err("%s: hyp_assign_phys failed result = %d addr = 0x%llx size = %zu\n",
 						__func__, ret, cal_block->cal_data.paddr,
 						cal_block->map_data.map_size);
 					ret = -EINVAL;

@@ -3309,7 +3309,7 @@ static int msm_dai_q6_set_channel_map(struct snd_soc_dai *dai,
 }
 
 static int msm_dai_q6_spk_digital_mute(struct snd_soc_dai *dai,
-				       int mute)
+				       int mute, int stream)
 {
 	int port_id = dai->id;
 	struct msm_dai_q6_dai_data *dai_data = dev_get_drvdata(dai->dev);
@@ -3334,7 +3334,8 @@ static struct snd_soc_dai_ops msm_dai_slimbus_0_rx_ops = {
 	.shutdown	= msm_dai_q6_shutdown,
 	.set_fmt	= msm_dai_q6_set_fmt,
 	.set_channel_map = msm_dai_q6_set_channel_map,
-	.digital_mute = msm_dai_q6_spk_digital_mute,
+	.mute_stream = msm_dai_q6_spk_digital_mute,
+	.no_capture_mute = 1,
 };
 
 static int msm_dai_q6_cal_info_put(struct snd_kcontrol *kcontrol,
@@ -10486,7 +10487,7 @@ static int msm_pcm_afe_dyn_mclk_ctl_get(struct snd_kcontrol *kcontrol,
 	ucontrol->value.integer.value[9] = global_dyn_mclk_cfg.d;
 	ucontrol->value.integer.value[10] = global_dyn_mclk_cfg.clk_set_minor_version;
 
-	pr_debug("%s:%d.... portid:%d, clk_id:%d, clk_freq_in_hz:%d, clk_attri:%d, clk_root:%d, enable:%d, divider_2x:%d, m:%d, n:%d, d:%d, version:%d\n",
+	pr_debug("%s:%d.... portid:%d, clk_id:%u, clk_freq_in_hz:%u, clk_attri:%u, clk_root:%u, enable:%u, divider_2x:%u, m:%u, n:%u, d:%u, version:%u\n",
 		__func__, __LINE__, global_dyn_mclk_cfg_portid, global_dyn_mclk_cfg.clk_id,
 		global_dyn_mclk_cfg.clk_freq_in_hz, global_dyn_mclk_cfg.clk_attri,
 		global_dyn_mclk_cfg.clk_root, global_dyn_mclk_cfg.enable,
@@ -10522,7 +10523,7 @@ static int msm_pcm_afe_dyn_mclk_ctl_put(struct snd_kcontrol *kcontrol,
 	global_dyn_mclk_cfg.n = ucontrol->value.integer.value[8];
 	global_dyn_mclk_cfg.d = ucontrol->value.integer.value[9];
 
-	pr_debug("%s:%d.... portid:%d, clk_id_index:%d, clk_freq_in_hz:%d, clk_attri_index:%d, clk_root_index:%d, enable:%d, divider_2x:%d, m:%d, n:%d, d:%d, version:%d\n",
+	pr_debug("%s:%d.... portid:%ld, clk_id_index:%ld, clk_freq_in_hz:%ld, clk_attri_index:%ld, clk_root_index:%ld, enable:%ld, divider_2x:%ld, m:%ld, n:%ld, d:%ld\n",
 		__func__, __LINE__, ucontrol->value.integer.value[0],
 		 ucontrol->value.integer.value[1],
 		ucontrol->value.integer.value[2], ucontrol->value.integer.value[3],
@@ -11814,7 +11815,7 @@ static void msm_dai_q6_tdm_shutdown(struct snd_pcm_substream *substream,
 					msm_dai_q6_tdm_set_clk(dai_data,
 						dai->id, false);
 				}
-				pr_err("%s:AFE Paired Rx Port Not disabled");
+				pr_err("%s:AFE Paired Rx Port Not disabled", __func__);
 			}
 		}
 		if (msm_dai_q6_get_tdm_clk_ref(group_idx) == 0) {
@@ -15730,7 +15731,7 @@ static void msm_dai_q6_cdc_dma_shutdown(struct snd_pcm_substream *substream,
 }
 
 static int msm_dai_q6_cdc_dma_digital_mute(struct snd_soc_dai *dai,
-				       int mute)
+				       int mute, int stream)
 {
 	int port_id = dai->id;
 	struct msm_dai_q6_cdc_dma_dai_data *dai_data =
@@ -15754,7 +15755,8 @@ static struct snd_soc_dai_ops msm_dai_q6_cdc_wsa_dma_ops = {
 	.hw_params        = msm_dai_q6_cdc_dma_hw_params,
 	.shutdown         = msm_dai_q6_cdc_dma_shutdown,
 	.set_channel_map = msm_dai_q6_cdc_dma_set_channel_map,
-	.digital_mute = msm_dai_q6_cdc_dma_digital_mute,
+	.mute_stream = msm_dai_q6_cdc_dma_digital_mute,
+	.no_capture_mute = 1,
 };
 
 static struct snd_soc_dai_driver msm_dai_q6_cdc_dma_dai[] = {

@@ -4,6 +4,7 @@
  */
 
 #if defined(CONFIG_FSM_MISC)
+#include <linux/compat.h>
 #include "fsm_public.h"
 #ifdef CONFIG_FSM_NONDSP
 #include "fsm_q6afe.h"
@@ -58,7 +59,7 @@ static int fsm_misc_open(struct inode *inode, struct file *filp)
 
 	pr_debug("enter");
 	if (xchg(&g_misc_opened, 1)) {
-			pr_warning("device busy now");
+			pr_warn("device busy now");
 			return -EBUSY;
 	}
 	fsm_misc = fsm_alloc_mem(sizeof(struct fsm_misc));

@@ -194,7 +194,8 @@ static void populate_codec_list(struct msm_transcode_loopback *trans,
 	}
 }
 
-static int msm_transcode_loopback_open(struct snd_compr_stream *cstream)
+static int msm_transcode_loopback_open(struct snd_soc_component *audio_component,
+		struct snd_compr_stream *cstream)
 {
 	int ret = 0;
 	struct snd_compr_runtime *runtime;
@@ -303,7 +304,8 @@ static void stop_transcoding(struct msm_transcode_loopback *trans)
 	}
 }
 
-static int msm_transcode_loopback_free(struct snd_compr_stream *cstream)
+static int msm_transcode_loopback_free(struct snd_soc_component *audio_component,
+		struct snd_compr_stream *cstream)
 {
 	struct snd_compr_runtime *runtime = cstream->runtime;
 	struct msm_transcode_loopback *trans = runtime->private_data;
@@ -344,7 +346,8 @@ static int msm_transcode_loopback_free(struct snd_compr_stream *cstream)
 	return ret;
 }
 
-static int msm_transcode_loopback_trigger(struct snd_compr_stream *cstream,
+static int msm_transcode_loopback_trigger(struct snd_soc_component *audio_component,
+		struct snd_compr_stream *cstream,
 					  int cmd)
 {
 	struct snd_compr_runtime *runtime = cstream->runtime;
@@ -411,7 +414,8 @@ exit:
 	return ret;
 }
 
-static int msm_transcode_loopback_set_params(struct snd_compr_stream *cstream,
+static int msm_transcode_loopback_set_params(struct snd_soc_component *audio_component,
+		struct snd_compr_stream *cstream,
 				struct snd_compr_params *codec_param)
 {
 
@@ -582,7 +586,8 @@ exit:
 	return ret;
 }
 
-static int msm_transcode_loopback_get_caps(struct snd_compr_stream *cstream,
+static int msm_transcode_loopback_get_caps(struct snd_soc_component *audio_component,
+		struct snd_compr_stream *cstream,
 				struct snd_compr_caps *arg)
 {
 	struct snd_compr_runtime *runtime;
@@ -605,7 +610,8 @@ static int msm_transcode_loopback_get_caps(struct snd_compr_stream *cstream,
 	return 0;
 }
 
-static int msm_transcode_loopback_set_metadata(struct snd_compr_stream *cstream,
+static int msm_transcode_loopback_set_metadata(struct snd_soc_component *audio_component,
+		struct snd_compr_stream *cstream,
 				struct snd_compr_metadata *metadata)
 {
 	struct snd_soc_pcm_runtime *rtd;
@@ -1626,7 +1632,7 @@ static int msm_transcode_loopback_new(struct snd_soc_pcm_runtime *rtd)
 	return 0;
 }
 
-static struct snd_compr_ops msm_transcode_loopback_ops = {
+static const struct snd_compress_ops msm_transcode_loopback_ops = {
 	.open			= msm_transcode_loopback_open,
 	.free			= msm_transcode_loopback_free,
 	.trigger		= msm_transcode_loopback_trigger,
@@ -1667,11 +1673,17 @@ static void msm_transcode_loopback_remove(struct snd_soc_component *component)
 	return;
 }
 
+static int msm_soc_component_pcm_construct(struct snd_soc_component *component,
+		struct snd_soc_pcm_runtime *rtd)
+{
+	return msm_transcode_loopback_new(rtd);
+}
+
 static struct snd_soc_component_driver msm_soc_component = {
 	.name		= DRV_NAME,
 	.probe		= msm_transcode_loopback_probe,
-	.compr_ops	= &msm_transcode_loopback_ops,
-	.pcm_new	= msm_transcode_loopback_new,
+	.compress_ops	= &msm_transcode_loopback_ops,
+	.pcm_construct = msm_soc_component_pcm_construct,
 	.remove		= msm_transcode_loopback_remove,
 };
 

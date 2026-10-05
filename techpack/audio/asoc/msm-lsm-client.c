@@ -3,6 +3,7 @@
  * Copyright (c) 2013-2020, The Linux Foundation. All rights reserved.
  * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
  */
+#include <linux/compat.h>
 #include <linux/init.h>
 #include <linux/err.h>
 #include <linux/module.h>
@@ -1945,7 +1946,7 @@ static int msm_lsm_ioctl_compat(struct snd_pcm_substream *substream,
 	int err = 0;
 	u32 size = 0;
 
-	if (PCM_RUNTIME_CHECK(substream))
+	if (snd_BUG_ON(!substream || !substream->runtime))
 		return -ENXIO;
 
 	if (!substream || !substream->private_data) {
@@ -2250,7 +2251,7 @@ static int msm_lsm_ioctl_compat(struct snd_pcm_substream *substream,
 
 		if (p_data.data_size != expected_size) {
 			dev_err(rtd->dev,
-				"%s: %s: Invalid size %d, expected_size %d\n",
+				"%s: %s: Invalid size %d, expected_size %zu\n",
 				__func__, "SET_MODULE_PARAMS(_V2)_32",
 				p_data.data_size, expected_size);
 			err = -EINVAL;
@@ -3572,7 +3573,6 @@ static const struct snd_pcm_ops msm_lsm_ops = {
 	.ioctl          = msm_lsm_ioctl,
 	.prepare	= msm_lsm_prepare,
 #if IS_ENABLED(CONFIG_AUDIO_QGKI)
-	.compat_ioctl   = msm_lsm_ioctl_compat,
 #endif /* CONFIG_AUDIO_QGKI */
 	.hw_params      = msm_lsm_hw_params,
 	.copy_user      = msm_lsm_pcm_copy,
@@ -3601,10 +3601,68 @@ static int msm_asoc_lsm_probe(struct snd_soc_component *component)
 	return 0;
 }
 
+static int msm_soc_component_open(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_lsm_ops.open(substream);
+}
+
+static int msm_soc_component_close(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_lsm_ops.close(substream);
+}
+
+static int msm_soc_component_ioctl(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream, unsigned int cmd, void *arg)
+{
+#if IS_ENABLED(CONFIG_COMPAT) && IS_ENABLED(CONFIG_AUDIO_QGKI)
+	if (in_compat_syscall())
+		return msm_lsm_ioctl_compat(substream, cmd, arg);
+#endif
+	return msm_lsm_ops.ioctl(substream, cmd, arg);
+}
+
+static int msm_soc_component_prepare(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_lsm_ops.prepare(substream);
+}
+
+static int msm_soc_component_hw_params(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream, struct snd_pcm_hw_params *params)
+{
+	return msm_lsm_ops.hw_params(substream, params);
+}
+
+static int msm_soc_component_copy_user(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream, int channel, unsigned long pos, void __user *buf, unsigned long bytes)
+{
+	return msm_lsm_ops.copy_user(substream, channel, pos, buf, bytes);
+}
+
+static snd_pcm_uframes_t msm_soc_component_pointer(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_lsm_ops.pointer(substream);
+}
+
+static int msm_soc_component_pcm_construct(struct snd_soc_component *component,
+		struct snd_soc_pcm_runtime *rtd)
+{
+	return msm_asoc_lsm_new(rtd);
+}
+
 static struct snd_soc_component_driver msm_soc_component = {
 	.name		= DRV_NAME,
-	.ops		= &msm_lsm_ops,
-	.pcm_new	= msm_asoc_lsm_new,
+	.open = msm_soc_component_open,
+	.close = msm_soc_component_close,
+	.ioctl = msm_soc_component_ioctl,
+	.prepare = msm_soc_component_prepare,
+	.hw_params = msm_soc_component_hw_params,
+	.copy_user = msm_soc_component_copy_user,
+	.pointer = msm_soc_component_pointer,
+	.pcm_construct = msm_soc_component_pcm_construct,
 	.probe		= msm_asoc_lsm_probe,
 };
 

@@ -199,7 +199,7 @@ static void rouleur_mbhc_clk_setup(struct snd_soc_component *component,
 
 static int rouleur_mbhc_btn_to_num(struct snd_soc_component *component)
 {
-	return snd_soc_component_read32(component, ROULEUR_ANA_MBHC_RESULT_3) &
+	return snd_soc_component_read(component, ROULEUR_ANA_MBHC_RESULT_3) &
 				0x7;
 }
 
@@ -267,7 +267,7 @@ static bool rouleur_mbhc_micb_en_status(struct wcd_mbhc *mbhc, int micb_num)
 	u8 val = 0;
 
 	if (micb_num == MIC_BIAS_2) {
-		val = ((snd_soc_component_read32(mbhc->component,
+		val = ((snd_soc_component_read(mbhc->component,
 				ROULEUR_ANA_MICBIAS_MICB_1_2_EN) & 0x04)
 				>> 2);
 		if (val == 0x01)
@@ -278,7 +278,7 @@ static bool rouleur_mbhc_micb_en_status(struct wcd_mbhc *mbhc, int micb_num)
 
 static bool rouleur_mbhc_hph_pa_on_status(struct snd_soc_component *component)
 {
-	return (snd_soc_component_read32(component, ROULEUR_ANA_HPHPA_PA_STATUS)
+	return (snd_soc_component_read(component, ROULEUR_ANA_HPHPA_PA_STATUS)
 					& 0xFF) ? true : false;
 }
 
@@ -415,12 +415,12 @@ static void rouleur_mbhc_get_result_params(struct rouleur_priv *rouleur,
 		"%s: zcode: %d, zcode1: %d\n", __func__, zcode, zcode1);
 
 	/* Calculate calibration coefficient */
-	zdet_cal_result = (snd_soc_component_read32(component,
+	zdet_cal_result = (snd_soc_component_read(component,
 				ROULEUR_ANA_MBHC_ZDET_CALIB_RESULT)) & 0x1F;
 	zdet_cal_coeff = ROULEUR_ZDET_C1 /
 			((ROULEUR_ZDET_C2 * zdet_cal_result) + ROULEUR_ZDET_C3);
 	/* Rload calculation */
-	zdet_est_range = (snd_soc_component_read32(component,
+	zdet_est_range = (snd_soc_component_read(component,
 			  ROULEUR_ANA_MBHC_ZDET_CALIB_RESULT) & 0x60) >> 5;
 
 	dev_dbg(rouleur->dev,
@@ -558,7 +558,7 @@ static void rouleur_wcd_mbhc_calc_impedance(struct wcd_mbhc *mbhc, uint32_t *zl,
 
 	WCD_MBHC_RSC_ASSERT_LOCKED(mbhc);
 
-	reg0 = snd_soc_component_read32(component, ROULEUR_ANA_MBHC_ELECT);
+	reg0 = snd_soc_component_read(component, ROULEUR_ANA_MBHC_ELECT);
 
 	if (reg0 & 0x80) {
 		is_fsm_disable = true;
@@ -753,13 +753,13 @@ static bool rouleur_mbhc_get_moisture_status(struct wcd_mbhc *mbhc)
 	/* If moisture_en is already enabled, then skip to plug type
 	 * detection.
 	 */
-	if ((snd_soc_component_read32(component, ROULEUR_ANA_MBHC_CTL_2) &
+	if ((snd_soc_component_read(component, ROULEUR_ANA_MBHC_CTL_2) &
 			0x0C))
 		goto done;
 
 	rouleur_mbhc_moisture_detect_en(mbhc, true);
 	/* Read moisture comparator status */
-	ret = ((snd_soc_component_read32(component, ROULEUR_ANA_MBHC_FSM_STATUS)
+	ret = ((snd_soc_component_read(component, ROULEUR_ANA_MBHC_FSM_STATUS)
 				& 0x20) ? 0 : 1);
 
 done:

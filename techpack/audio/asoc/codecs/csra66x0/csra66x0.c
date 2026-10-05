@@ -442,7 +442,7 @@ static ssize_t debugfs_csra66x0_reg_show(struct csra66x0_priv *csra66x0,
 
 	for (i = ((int) *ppos + addr_min);
 		i <= addr_max; i++) {
-		reg_val = snd_soc_component_read32(component, i);
+		reg_val = snd_soc_component_read(component, i);
 		len = snprintf(tmp_buf, 20, "0x%04X: 0x%02X\n", i, (reg_val & 0xFF));
 		if ((total + len) >= count - 1)
 			break;
@@ -501,11 +501,11 @@ static int csra66x0_get_volume(struct snd_kcontrol *kcontrol,
 	unsigned int reg_r = mc->rreg;
 	unsigned int val_l, val_r;
 
-	val_l = (snd_soc_component_read32(component, reg_l) & 0xff) |
-			((snd_soc_component_read32(component,
+	val_l = (snd_soc_component_read(component, reg_l) & 0xff) |
+			((snd_soc_component_read(component,
 			CSRA66X0_CH1_VOLUME_1_FA) & (0x01)) << 8);
-	val_r = (snd_soc_component_read32(component, reg_r) & 0xff) |
-			((snd_soc_component_read32(component,
+	val_r = (snd_soc_component_read(component, reg_r) & 0xff) |
+			((snd_soc_component_read(component,
 			CSRA66X0_CH2_VOLUME_1_FA) & (0x01)) << 8);
 	ucontrol->value.integer.value[0] = val_l;
 	ucontrol->value.integer.value[1] = val_r;
@@ -615,7 +615,7 @@ void csra66x0_hw_free_mute(struct snd_soc_component *component)
 	if (component == NULL)
 		return;
 
-	val = snd_soc_component_read32(component,
+	val = snd_soc_component_read(component,
 			CSRA66X0_MISC_CONTROL_STATUS_1_FA);
 	snd_soc_component_write(component, CSRA66X0_MISC_CONTROL_STATUS_1_FA,
 			val | 0x04);
@@ -630,7 +630,7 @@ static int csra66x0_wait_for_config_state(struct snd_soc_component *component)
 	do {
 		/* wait >= 100ms to check if HW has moved to config state */
 		msleep(100);
-		val = snd_soc_component_read32(component,
+		val = snd_soc_component_read(component,
 				CSRA66X0_CHIP_STATE_STATUS_FA);
 		if (val == CONFIG_STATE_ID)
 			break;
@@ -803,7 +803,7 @@ static int csra66x0_reset(struct csra66x0_priv *csra66x0)
 	struct snd_soc_component *component = csra66x0->component;
 	u16 val;
 
-	val = snd_soc_component_read32(component, CSRA66X0_FAULT_STATUS_FA);
+	val = snd_soc_component_read(component, CSRA66X0_FAULT_STATUS_FA);
 	if (val & FAULT_STATUS_INTERNAL)
 		dev_dbg(component->dev, "%s: FAULT_STATUS_INTERNAL 0x%X\n",
 			__func__, val);
@@ -829,7 +829,7 @@ static int csra66x0_reset(struct csra66x0_priv *csra66x0)
 	snd_soc_component_write(component, CSRA66X0_FAULT_STATUS_FA, 0x00);
 	snd_soc_component_write(component, CSRA66X0_IRQ_OUTPUT_STATUS_FA, 0x00);
 	/* apply reset to CSRA66X0 */
-	val = snd_soc_component_read32(component,
+	val = snd_soc_component_read(component,
 			CSRA66X0_MISC_CONTROL_STATUS_1_FA);
 	snd_soc_component_write(component, CSRA66X0_MISC_CONTROL_STATUS_1_FA,
 			val | 0x08);
@@ -979,7 +979,7 @@ static irqreturn_t csra66x0_irq(int irq, void *data)
 		__func__, component->name);
 
 	/* fault  indication */
-	val = snd_soc_component_read32(component, CSRA66X0_IRQ_OUTPUT_STATUS_FA)
+	val = snd_soc_component_read(component, CSRA66X0_IRQ_OUTPUT_STATUS_FA)
 		& 0x1;
 	if (!val)
 		return IRQ_HANDLED;
@@ -1179,7 +1179,7 @@ static ssize_t csra66x0_sysfs_read2reg_value(struct device *dev,
 		goto end;
 	}
 
-	reg_val = snd_soc_component_read32(component, csra66x0->sysfs_reg_addr);
+	reg_val = snd_soc_component_read(component, csra66x0->sysfs_reg_addr);
 	ret = snprintf(buf, CSRA66X0_SYSFS_ENTRY_MAX_LEN,
 		"0x%04X:	0x%02X\n", csra66x0->sysfs_reg_addr, reg_val);
 	pr_debug("%s: 0x%04X: 0x%02X\n", __func__,

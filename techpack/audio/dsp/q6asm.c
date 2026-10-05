@@ -263,10 +263,10 @@ static inline int q6asm_get_flag_from_token(union asm_token_struct *asm_token,
 #define OUT_BUFFER_SIZE 56
 #define IN_BUFFER_SIZE 24
 
-static struct timeval out_cold_tv;
-static struct timeval out_warm_tv;
-static struct timeval out_cont_tv;
-static struct timeval in_cont_tv;
+static struct __kernel_old_timeval out_cold_tv;
+static struct __kernel_old_timeval out_warm_tv;
+static struct __kernel_old_timeval out_cont_tv;
+static struct __kernel_old_timeval in_cont_tv;
 static long out_enable_flag;
 static long in_enable_flag;
 static struct dentry *out_dentry;
@@ -398,17 +398,17 @@ static const struct file_operations audio_input_latency_debug_fops = {
  *
  * ktime_get [nsec]-> ktime_to_timespec [sec,nsec]-> timeval[sec,usec]
  *
- * Returns struct timeval
+ * Returns struct __kernel_old_timeval
 */
-static struct timeval get_monotonic_timeval(void)
+static struct __kernel_old_timeval get_monotonic_timeval(void)
 {
-	static struct timeval out_tval;
+	static struct __kernel_old_timeval out_tval;
 
 	/* Get time from monotonic clock in nanoseconds */
 	ktime_t kTimeNsec = ktime_get();
 
 	/* Convert it to timespec format and later to timeval as expected by audio HAL */
-	struct timespec temp_tspec = ktime_to_timespec(kTimeNsec);
+	struct timespec64 temp_tspec = ktime_to_timespec64(kTimeNsec);
 
 	/* Time returned above is in sec,nanosec format, needs to convert to sec,microsec */
 	out_tval.tv_usec = temp_tspec.tv_nsec/1000;
@@ -2148,6 +2148,7 @@ static int32_t q6asm_callback(struct apr_client_data *data, void *priv)
 					data->payload_size))
 					break;
 			}
+			fallthrough;
 		case ASM_SESSION_CMD_PAUSE:
 		case ASM_SESSION_CMD_SUSPEND:
 		case ASM_DATA_CMD_EOS:
@@ -2167,6 +2168,7 @@ static int32_t q6asm_callback(struct apr_client_data *data, void *priv)
 				&(session[session_id].session_lock), flags);
 			return ret;
 		}
+			fallthrough;
 		case ASM_SESSION_CMD_SET_MTMX_STRTR_PARAMS_V2:
 		case ASM_STREAM_CMD_OPEN_READ_V3:
 		case ASM_STREAM_CMD_OPEN_WRITE_V3:
@@ -2436,7 +2438,7 @@ static int32_t q6asm_callback(struct apr_client_data *data, void *priv)
 		config_debug_fs_read_cb();
 
 		if (data->payload_size != (READDONE_IDX_SEQ_ID + 1) * sizeof(uint32_t)) {
-			pr_err("%s:  payload size of %d is less than expected %d.\n",
+			pr_err("%s:  payload size of %d is less than expected %zu.\n",
 					__func__, data->payload_size,
 					((READDONE_IDX_SEQ_ID + 1) * sizeof(uint32_t)));
 			spin_unlock_irqrestore(

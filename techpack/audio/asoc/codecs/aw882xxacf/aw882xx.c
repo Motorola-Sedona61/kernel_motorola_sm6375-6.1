@@ -1142,7 +1142,9 @@ static int aw882xx_set_rx_en(struct snd_kcontrol *kcontrol,
 {
 	int ret = -EINVAL;
 	uint32_t ctrl_value = 0;
+#ifdef CONFIG_AW882XX_ALGO_BIN_PARAMS
 	struct aw_device *aw_dev = NULL;
+#endif
 	aw_snd_soc_codec_t *codec =
 		aw_componet_codec_ops.kcontrol_codec(kcontrol);
 	struct aw882xx *aw882xx =
@@ -1151,7 +1153,9 @@ static int aw882xx_set_rx_en(struct snd_kcontrol *kcontrol,
 	aw_dev_dbg(aw882xx->dev, "ucontrol->value.integer.value[0]=%ld",
 				ucontrol->value.integer.value[0]);
 
+#ifdef CONFIG_AW882XX_ALGO_BIN_PARAMS
 	aw_dev = aw882xx->aw_pa;
+#endif
 	ctrl_value = ucontrol->value.integer.value[0];
 
 	ret = aw_dev_set_afe_module_en(AW_RX_MODULE, ctrl_value);
@@ -2442,7 +2446,7 @@ static struct snd_soc_dai_driver aw882xx_dai[] = {
 				SNDRV_PCM_FMTBIT_S32_LE),
 		 },
 		.ops = &aw882xx_dai_ops,
-		/* .symmetric_rates = 1,*/
+		/* .symmetric_rate = 1,*/
 	},
 };
 
@@ -3302,7 +3306,7 @@ err_sysfs:
 	return ret;
 }
 
-static int aw882xx_i2c_remove(struct i2c_client *i2c)
+static void aw882xx_i2c_remove(struct i2c_client *i2c)
 {
 	struct aw882xx *aw882xx = i2c_get_clientdata(i2c);
 
@@ -3315,10 +3319,6 @@ static int aw882xx_i2c_remove(struct i2c_client *i2c)
 			aw882xx);
 
 	/*free gpio*/
-	if (gpio_is_valid(aw882xx->irq_gpio))
-		devm_gpio_free(&i2c->dev, aw882xx->irq_gpio);
-	if (gpio_is_valid(aw882xx->reset_gpio))
-		devm_gpio_free(&i2c->dev, aw882xx->reset_gpio);
 
 	/*rm attr node*/
 	sysfs_remove_group(&i2c->dev.kobj, &aw882xx_attribute_group);
@@ -3344,7 +3344,7 @@ static int aw882xx_i2c_remove(struct i2c_client *i2c)
 	}
 	mutex_unlock(&g_aw882xx_lock);
 
-	return 0;
+	return;
 
 }
 

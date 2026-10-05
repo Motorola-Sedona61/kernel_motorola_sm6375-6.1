@@ -8,7 +8,7 @@
 
 #include <linux/miscdevice.h>
 #include <sound/soc.h>
-#include <sound/wcd-dsp-mgr.h>
+#include <asoc/wcd-dsp-mgr.h>
 
 enum cdc_ssr_event {
 	WCD_CDC_DOWN_EVENT,

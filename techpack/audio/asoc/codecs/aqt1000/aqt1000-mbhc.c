@@ -198,7 +198,7 @@ static void aqt_mbhc_clk_setup(struct snd_soc_component *component,
 
 static int aqt_mbhc_btn_to_num(struct snd_soc_component *component)
 {
-	return snd_soc_component_read32(component,
+	return snd_soc_component_read(component,
 					AQT1000_ANA_MBHC_RESULT_3) & 0x7;
 }
 
@@ -270,7 +270,7 @@ static bool aqt_mbhc_micb_en_status(struct wcd_mbhc *mbhc, int micb_num)
 	u8 val;
 
 	if (micb_num == MIC_BIAS_1) {
-		val = ((snd_soc_component_read32(
+		val = ((snd_soc_component_read(
 				mbhc->component, AQT1000_ANA_MICB1) & 0xC0)
 			>> 6);
 		if (val == 0x01)
@@ -281,7 +281,7 @@ static bool aqt_mbhc_micb_en_status(struct wcd_mbhc *mbhc, int micb_num)
 
 static bool aqt_mbhc_hph_pa_on_status(struct snd_soc_component *component)
 {
-	return (snd_soc_component_read32(component, AQT1000_ANA_HPH) & 0xC0) ?
+	return (snd_soc_component_read(component, AQT1000_ANA_HPH) & 0xC0) ?
 		true : false;
 }
 
@@ -503,10 +503,10 @@ static inline void aqt_wcd_mbhc_qfuse_cal(struct snd_soc_component *component,
 	int q1_cal;
 
 	if (*z_val < (AQT_ZDET_VAL_400/1000))
-		q1 = snd_soc_component_read32(component,
+		q1 = snd_soc_component_read(component,
 			AQT1000_CHIP_CFG0_EFUSE_VAL_OUT1 + (2 * flag_l_r));
 	else
-		q1 = snd_soc_component_read32(component,
+		q1 = snd_soc_component_read(component,
 			AQT1000_CHIP_CFG0_EFUSE_VAL_OUT2 + (2 * flag_l_r));
 	if (q1 & 0x80)
 		q1_cal = (10000 - ((q1 & 0x7F) * 25));
@@ -542,14 +542,14 @@ static void aqt_wcd_mbhc_calc_impedance(struct wcd_mbhc *mbhc, uint32_t *zl,
 
 	WCD_MBHC_RSC_ASSERT_LOCKED(mbhc);
 
-	reg0 = snd_soc_component_read32(component, AQT1000_ANA_MBHC_BTN5);
-	reg1 = snd_soc_component_read32(component, AQT1000_ANA_MBHC_BTN6);
-	reg2 = snd_soc_component_read32(component, AQT1000_ANA_MBHC_BTN7);
-	reg3 = snd_soc_component_read32(component, AQT1000_MBHC_CTL_CLK);
-	reg4 = snd_soc_component_read32(component,
+	reg0 = snd_soc_component_read(component, AQT1000_ANA_MBHC_BTN5);
+	reg1 = snd_soc_component_read(component, AQT1000_ANA_MBHC_BTN6);
+	reg2 = snd_soc_component_read(component, AQT1000_ANA_MBHC_BTN7);
+	reg3 = snd_soc_component_read(component, AQT1000_MBHC_CTL_CLK);
+	reg4 = snd_soc_component_read(component,
 					AQT1000_MBHC_NEW_ZDET_ANA_CTL);
 
-	if (snd_soc_component_read32(component,
+	if (snd_soc_component_read(component,
 				     AQT1000_ANA_MBHC_ELECT) & 0x80) {
 		is_fsm_disable = true;
 		regmap_update_bits(aqt->regmap,
@@ -775,10 +775,10 @@ static bool aqt_is_anc_on(struct wcd_mbhc *mbhc)
 	u16 ancl, ancr;
 
 	ancl =
-		(snd_soc_component_read32(mbhc->component,
+		(snd_soc_component_read(mbhc->component,
 				AQT1000_CDC_RX1_RX_PATH_CFG0)) & 0x10;
 	ancr =
-		(snd_soc_component_read32(mbhc->component,
+		(snd_soc_component_read(mbhc->component,
 				AQT1000_CDC_RX2_RX_PATH_CFG0)) & 0x10;
 
 	anc_on = !!(ancl | ancr);

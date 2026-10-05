@@ -1904,8 +1904,6 @@ static int msm_routing_get_adm_topology(int fedai_id, int session_type,
 	pr_debug("%s: fedai_id %d, session_type %d, be_id %d\n",
 	       __func__, fedai_id, session_type, be_id);
 
-	if (cal_data == NULL)
-		goto done;
 
 	app_type = fe_dai_app_type_cfg[fedai_id][session_type][be_id].app_type;
 	acdb_dev_id =
@@ -1929,7 +1927,6 @@ static int msm_routing_get_adm_topology(int fedai_id, int session_type,
 		if (topology < 0)
 			topology = NULL_COPP_TOPOLOGY;
 	}
-done:
 	pr_debug("%s: Using topology %d\n", __func__, topology);
 	return topology;
 }
@@ -6659,13 +6656,13 @@ static int msm_pcm_asm_format_put(struct snd_kcontrol *kcontrol,
 
 		if((fe_id < MSM_FRONTEND_DAI_MULTIMEDIA1) ||
 		   (fe_id >= MSM_FRONTEND_DAI_MAX)) {
-			pr_err("%s: Received invalid fe_id %lu\n", __func__, fe_id);
+			pr_err("%s: Received invalid fe_id %d\n", __func__, fe_id);
 			ret = -EINVAL;
 			goto done;
 		}
 		if((mode < MSM_ASM_PLAYBACK_MODE) ||
 		   (mode >= MSM_ASM_MAX_MODE)) {
-			pr_err("%s: Received invalid mode %lu\n", __func__, mode);
+			pr_err("%s: Received invalid mode %d\n", __func__, mode);
 			ret = -EINVAL;
 			goto done;
 		}
@@ -6686,7 +6683,7 @@ static int msm_pcm_asm_format_put(struct snd_kcontrol *kcontrol,
 					loopback_cfg[fe_id].bit_format = format;
 			}
 		}else {
-			pr_err("%s: Received invalid foramt %lu\n", __func__,
+			pr_err("%s: Received invalid foramt %d\n", __func__,
 					asm_cfg_params[2]);
 			ret = -EINVAL;
 			goto done;
@@ -6706,7 +6703,7 @@ static int msm_pcm_asm_format_get(struct snd_kcontrol *kcontrol,
 	ucontrol->value.integer.value[3] = 0;
 	mutex_unlock(&routing_lock);
 
-	pr_debug("%s: fe_id:%d, mode:%d, format:%d, set:%d\n",__func__,
+	pr_debug("%s: fe_id:%ld, mode:%ld, format:%ld, set:%ld\n",__func__,
 			ucontrol->value.integer.value[0],
 			ucontrol->value.integer.value[1],
 			ucontrol->value.integer.value[2],
@@ -43924,12 +43921,44 @@ void msm_routing_pcm_free(struct snd_pcm *pcm)
 	msm_pcm_routing_hwdep_free(pcm);
 }
 
+static int msm_soc_routing_component_hw_params(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream, struct snd_pcm_hw_params *params)
+{
+	return msm_routing_pcm_ops.hw_params(substream, params);
+}
+
+static int msm_soc_routing_component_close(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_routing_pcm_ops.close(substream);
+}
+
+static int msm_soc_routing_component_prepare(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_routing_pcm_ops.prepare(substream);
+}
+
+static int msm_soc_routing_component_pcm_construct(struct snd_soc_component *component,
+		struct snd_soc_pcm_runtime *rtd)
+{
+	return msm_routing_pcm_new(rtd);
+}
+
+static void msm_soc_routing_component_pcm_destruct(struct snd_soc_component *component,
+		struct snd_pcm *pcm)
+{
+	msm_routing_pcm_free(pcm);
+}
+
 static struct snd_soc_component_driver msm_soc_routing_component = {
 	.name		= DRV_NAME,
-	.ops		= &msm_routing_pcm_ops,
+	.hw_params = msm_soc_routing_component_hw_params,
+	.close = msm_soc_routing_component_close,
+	.prepare = msm_soc_routing_component_prepare,
 	.probe		= msm_routing_probe,
-	.pcm_new	= msm_routing_pcm_new,
-	.pcm_free	= msm_routing_pcm_free,
+	.pcm_construct = msm_soc_routing_component_pcm_construct,
+	.pcm_destruct = msm_soc_routing_component_pcm_destruct,
 };
 
 static int msm_routing_pcm_probe(struct platform_device *pdev)

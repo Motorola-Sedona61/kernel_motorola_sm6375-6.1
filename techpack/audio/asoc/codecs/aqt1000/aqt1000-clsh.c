@@ -258,7 +258,7 @@ aqt_enable_clsh_block(struct snd_soc_component *component,
 
 static inline bool aqt_clsh_enable_status(struct snd_soc_component *component)
 {
-	return snd_soc_component_read32(
+	return snd_soc_component_read(
 			component, AQT1000_CDC_CLSH_CRC) & 0x01;
 }
 

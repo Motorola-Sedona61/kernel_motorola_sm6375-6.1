@@ -2,6 +2,7 @@
 /* Copyright (c) 2012-2020, The Linux Foundation. All rights reserved.
  */
 
+#include <linux/compat.h>
 #include <linux/init.h>
 #include <linux/err.h>
 #include <linux/module.h>
@@ -743,7 +744,6 @@ static const struct snd_pcm_ops msm_pcm_ops = {
 	.trigger		= msm_pcm_trigger,
 	.ioctl			= msm_pcm_ioctl,
 #if IS_ENABLED(CONFIG_AUDIO_QGKI)
-	.compat_ioctl		= msm_pcm_ioctl,
 #endif /* CONFIG_AUDIO_QGKI */
 };
 
@@ -767,10 +767,61 @@ static int msm_pcm_voice_probe(struct snd_soc_component *component)
 	return 0;
 }
 
+static int msm_soc_component_open(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_pcm_ops.open(substream);
+}
+
+static int msm_soc_component_hw_params(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream, struct snd_pcm_hw_params *params)
+{
+	return msm_pcm_ops.hw_params(substream, params);
+}
+
+static int msm_soc_component_close(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_pcm_ops.close(substream);
+}
+
+static int msm_soc_component_prepare(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_pcm_ops.prepare(substream);
+}
+
+static int msm_soc_component_trigger(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream, int cmd)
+{
+	return msm_pcm_ops.trigger(substream, cmd);
+}
+
+static int msm_soc_component_ioctl(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream, unsigned int cmd, void *arg)
+{
+#if IS_ENABLED(CONFIG_COMPAT) && IS_ENABLED(CONFIG_AUDIO_QGKI)
+	if (in_compat_syscall())
+		return msm_pcm_ioctl(substream, cmd, arg);
+#endif
+	return msm_pcm_ops.ioctl(substream, cmd, arg);
+}
+
+static int msm_soc_component_pcm_construct(struct snd_soc_component *component,
+		struct snd_soc_pcm_runtime *rtd)
+{
+	return msm_asoc_pcm_new(rtd);
+}
+
 static struct snd_soc_component_driver msm_soc_component = {
 	.name		= DRV_NAME,
-	.ops		= &msm_pcm_ops,
-	.pcm_new	= msm_asoc_pcm_new,
+	.open = msm_soc_component_open,
+	.hw_params = msm_soc_component_hw_params,
+	.close = msm_soc_component_close,
+	.prepare = msm_soc_component_prepare,
+	.trigger = msm_soc_component_trigger,
+	.ioctl = msm_soc_component_ioctl,
+	.pcm_construct = msm_soc_component_pcm_construct,
 	.probe		= msm_pcm_voice_probe,
 };
 

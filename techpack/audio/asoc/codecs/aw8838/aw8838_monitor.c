@@ -1032,7 +1032,7 @@ int aw8838_load_monitor_profile(struct aw8838_monitor *monitor)
 			__func__, monitor->is_enable);
 		ret = 0;
 	} else {
-		ret = request_firmware_nowait(THIS_MODULE, FW_ACTION_HOTPLUG,
+		ret = request_firmware_nowait(THIS_MODULE, true,
 				AW_MONITOR_FILE,
 				aw8838->dev, GFP_KERNEL, aw8838,
 				aw_monitor_profile_loaded);

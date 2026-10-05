@@ -28,12 +28,12 @@ static struct device *g_fsm_pdev = NULL;
 #include "fsm_misc.c"
 //#include "fsm_codec.c"
 
-void fsm_mutex_lock()
+void fsm_mutex_lock(void)
 {
     mutex_lock(&g_fsm_mutex);
 }
 
-void fsm_mutex_unlock()
+void fsm_mutex_unlock(void)
 {
     mutex_unlock(&g_fsm_mutex);
 }
@@ -367,7 +367,7 @@ static void fsm_work_monitor(struct work_struct *work)
     //ret = fsm_dev_recover(fsm_dev);
     fsm_mutex_unlock();
     if (fsm_dev->rec_count >= 5) { // 5 time max
-        pr_addr(warning, "recover max time, stop it");
+        pr_addr(warn, "recover max time, stop it");
         return;
     }
     /* reschedule */
@@ -515,7 +515,6 @@ static int fsm_i2c_probe(struct i2c_client *i2c,
         fsm_regmap_i2c_deinit(fsm_dev->regmap);
 #endif
         gpio_set_value(fsm_dev->rst_gpio, 0);
-        devm_gpio_free(&i2c->dev, fsm_dev->rst_gpio);
         devm_kfree(&i2c->dev, fsm_dev);
         return ret;
     }
@@ -542,14 +541,14 @@ static int fsm_i2c_probe(struct i2c_client *i2c,
     return 0;
 }
 
-static int fsm_i2c_remove(struct i2c_client *i2c)
+static void fsm_i2c_remove(struct i2c_client *i2c)
 {
     fsm_dev_t *fsm_dev = i2c_get_clientdata(i2c);
 
     pr_debug("enter");
     if (fsm_dev == NULL) {
         pr_err("bad parameter");
-        return -EINVAL;
+        return;
     }
     if (fsm_dev->fsm_wq) {
         cancel_delayed_work_sync(&fsm_dev->interrupt_work);
@@ -568,16 +567,10 @@ static int fsm_i2c_remove(struct i2c_client *i2c)
 
     fsm_remove(fsm_dev);
     fsm_vddd_off();
-    if (gpio_is_valid(fsm_dev->irq_gpio)) {
-        devm_gpio_free(&i2c->dev, fsm_dev->irq_gpio);
-    }
-    if (gpio_is_valid(fsm_dev->rst_gpio)) {
-        devm_gpio_free(&i2c->dev, fsm_dev->rst_gpio);
-    }
     devm_kfree(&i2c->dev, fsm_dev);
     dev_info(&i2c->dev, "i2c removed");
 
-    return 0;
+    return;
 }
 
 static void fsm_i2c_shutdown(struct i2c_client *i2c)
@@ -629,7 +622,8 @@ EXPORT_SYMBOL(exfsm_i2c_probe);
 
 int exfsm_i2c_remove(struct i2c_client *i2c)
 {
-    return fsm_i2c_remove(i2c);
+    fsm_i2c_remove(i2c);
+    return 0;
 }
 EXPORT_SYMBOL(exfsm_i2c_remove);
 

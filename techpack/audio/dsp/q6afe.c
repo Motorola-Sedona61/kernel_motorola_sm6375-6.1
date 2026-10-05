@@ -1252,6 +1252,7 @@ static int32_t afe_callback(struct apr_client_data *data, void *priv)
 				if (rtac_make_afe_callback(payload,
 							   data->payload_size))
 					return 0;
+				fallthrough;
 			case AFE_PORT_CMD_DEVICE_STOP:
 			case AFE_PORT_CMD_DEVICE_START:
 			case AFE_PSEUDOPORT_CMD_START:
@@ -5516,6 +5517,7 @@ static int q6afe_send_dec_config(u16 port_id,
 			break;
 		}
 		/* fall through for abr enabled case */
+		fallthrough;
 	default:
 		pr_debug("%s:sending AFE_ENCDEC_PARAM_ID_DEC_TO_ENC_COMMUNICATION to DSP payload\n",
 			  __func__);
@@ -5559,6 +5561,7 @@ static int q6afe_send_dec_config(u16 port_id,
 			break;
 		}
 		/* fall through for abr enabled case */
+		fallthrough;
 	case ASM_MEDIA_FMT_APTX_AD_SPEECH:
 		media_type.sample_rate = AFE_PORT_SAMPLE_RATE_32K;
 		break;
@@ -10012,7 +10015,7 @@ static int afe_get_clk_src(u16 port_id, char *clk_src)
 		return -EINVAL;
 	}
 
-	if (clkinfo_per_port[idx].clk_src_name == NULL)
+	if (!clkinfo_per_port[idx].clk_src_name[0])
 		return -EINVAL;
 	strlcpy(clk_src, clkinfo_per_port[idx].clk_src_name,
 				CLK_SRC_NAME_MAX);
@@ -10429,7 +10432,7 @@ int afe_set_lpass_clock_v2(u16 port_id, struct afe_clk_set *cfg)
 		return -EINVAL;
 	}
 
-	if (clk_src_name != NULL) {
+	if (clk_src_name[0]) {
 		if (cfg->clk_freq_in_hz % AFE_SAMPLING_RATE_8KHZ) {
 			if (clk_src_name[CLK_SRC_FRACT] != NULL)
 				ret = afe_set_source_clk(port_id,

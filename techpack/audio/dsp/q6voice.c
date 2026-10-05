@@ -8,6 +8,7 @@
 #include <linux/kthread.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <dsp/audio_scm.h>
 #include <linux/uaccess.h>
 #include <linux/wait.h>
 #include <linux/mutex.h>
@@ -1303,11 +1304,11 @@ static int voice_unmap_cal_block(struct voice_data *v, int cal_index)
 			result = -EINVAL;
 			goto unlock;
 		}
-		result = hyp_assign_phys(cal_block->cal_data.paddr,
+		result = audio_hyp_assign_phys(cal_block->cal_data.paddr,
 					 cal_block->map_data.map_size,
 					 source_vm, 2, dest_vm, dest_perms, 1);
 		if (result < 0) {
-			pr_err("%s: hyp_assign_phys failed result = %d addr = 0x%pK size = %d\n",
+			pr_err("%s: hyp_assign_phys failed result = %d addr = 0x%llx size = %zu\n",
 				__func__, result, cal_block->cal_data.paddr,
 				cal_block->map_data.map_size);
 			cal_block->map_data.q6map_handle = 0;
@@ -1539,12 +1540,12 @@ fail:
 				mutex_unlock(&common.cal_data[CVP_VOCPROC_CAL]->lock);
 				return -EINVAL;
 			}
-			result = hyp_assign_phys(
+			result = audio_hyp_assign_phys(
 					cal_block->cal_data.paddr,
 					cal_block->map_data.map_size,
 					source_vm, 2, dest_vm, dest_perms, 1);
 			if (result < 0) {
-				pr_err("%s: hyp_assign_phys failed result = %d addr = 0x%pK size = %d\n",
+				pr_err("%s: hyp_assign_phys failed result = %d addr = 0x%llx size = %zu\n",
 					__func__, result,
 					cal_block->cal_data.paddr,
 					cal_block->map_data.map_size);
@@ -2786,11 +2787,11 @@ static int voice_get_cal(struct cal_block_data **cal_block,
 			ret = -EINVAL;
 			goto done;
 		}
-		ret = hyp_assign_phys((*cal_block)->cal_data.paddr,
+		ret = audio_hyp_assign_phys((*cal_block)->cal_data.paddr,
 				      (*cal_block)->map_data.map_size,
 				      source_vm, 1, dest_vm, dest_perms, 2);
 		if (ret < 0) {
-			pr_err("%s: hyp_assign_phys failed ret = %d addr = 0x%pK size = %d\n",
+			pr_err("%s: hyp_assign_phys failed ret = %d addr = 0x%llx size = %zu\n",
 				__func__, ret, (*cal_block)->cal_data.paddr,
 				(*cal_block)->map_data.map_size);
 			ret = -EINVAL;
@@ -2860,7 +2861,7 @@ static int voice_send_cvs_register_cal_cmd(struct voice_data *v)
 	}
 
 	if (col_data->cal_data.size >= MAX_COL_INFO_SIZE) {
-		pr_err("%s: Invalid cal data size %d!\n",
+		pr_err("%s: Invalid cal data size %zu!\n",
 			__func__, col_data->cal_data.size);
 		ret = -EINVAL;
 		goto unlock;
@@ -3457,11 +3458,11 @@ static int voice_send_cvp_deregister_cal_cmd(struct voice_data *v)
 			ret = -EINVAL;
 			goto done;
 		}
-		ret = hyp_assign_phys(cal_block->cal_data.paddr,
+		ret = audio_hyp_assign_phys(cal_block->cal_data.paddr,
 				      cal_block->map_data.map_size,
 				      source_vm, 2, dest_vm, dest_perms, 1);
 		if (ret < 0) {
-			pr_err("%s: hyp_assign_phys failed result = %d addr = 0x%pK size = %d\n",
+			pr_err("%s: hyp_assign_phys failed result = %d addr = 0x%llx size = %zu\n",
 				__func__, ret, cal_block->cal_data.paddr,
 				cal_block->map_data.map_size);
 			ret = -EINVAL;
@@ -7273,12 +7274,12 @@ fail:
 				mutex_unlock(&common.cal_data[CVP_VOCPROC_CAL]->lock);
 				goto done;
 			}
-			result = hyp_assign_phys(
+			result = audio_hyp_assign_phys(
 					cal_block->cal_data.paddr,
 					cal_block->map_data.map_size,
 					source_vm, 2, dest_vm, dest_perms, 1);
 			if (result < 0) {
-				pr_err("%s: hyp_assign_phys failed result = %d addr = 0x%pK size = %d\n",
+				pr_err("%s: hyp_assign_phys failed result = %d addr = 0x%llx size = %zu\n",
 					__func__,
 					result,
 					cal_block->cal_data.paddr,

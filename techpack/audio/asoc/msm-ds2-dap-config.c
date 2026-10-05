@@ -3,6 +3,7 @@
  * Copyright (c) 2013-2018, The Linux Foundation. All rights reserved.
  */
 
+#include <linux/compat.h>
 #include <linux/err.h>
 #include <linux/module.h>
 #include <linux/bitops.h>

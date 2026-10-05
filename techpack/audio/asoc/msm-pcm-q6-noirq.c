@@ -2,6 +2,7 @@
 /* Copyright (c) 2016-2021, The Linux Foundation. All rights reserved.
  */
 
+#include <linux/compat.h>
 #include <linux/init.h>
 #include <linux/err.h>
 #include <linux/module.h>
@@ -1409,7 +1410,6 @@ static const struct snd_pcm_ops msm_pcm_ops = {
 	.hw_params	= msm_pcm_hw_params,
 	.ioctl          = msm_pcm_ioctl,
 #if IS_ENABLED(CONFIG_COMPAT) && IS_ENABLED(CONFIG_AUDIO_QGKI)
-	.compat_ioctl   = msm_pcm_compat_ioctl,
 #endif
 	.trigger        = msm_pcm_trigger,
 	.pointer        = msm_pcm_pointer,
@@ -1417,10 +1417,82 @@ static const struct snd_pcm_ops msm_pcm_ops = {
 	.close          = msm_pcm_close,
 };
 
+static int msm_soc_component_open(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_pcm_ops.open(substream);
+}
+
+static int msm_soc_component_prepare(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_pcm_ops.prepare(substream);
+}
+
+static int msm_soc_component_copy_user(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream, int channel, unsigned long pos, void __user *buf, unsigned long bytes)
+{
+	return msm_pcm_ops.copy_user(substream, channel, pos, buf, bytes);
+}
+
+static int msm_soc_component_hw_params(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream, struct snd_pcm_hw_params *params)
+{
+	return msm_pcm_ops.hw_params(substream, params);
+}
+
+static int msm_soc_component_ioctl(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream, unsigned int cmd, void *arg)
+{
+#if IS_ENABLED(CONFIG_COMPAT) && IS_ENABLED(CONFIG_AUDIO_QGKI)
+	if (in_compat_syscall())
+		return msm_pcm_compat_ioctl(substream, cmd, arg);
+#endif
+	return msm_pcm_ops.ioctl(substream, cmd, arg);
+}
+
+static int msm_soc_component_trigger(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream, int cmd)
+{
+	return msm_pcm_ops.trigger(substream, cmd);
+}
+
+static snd_pcm_uframes_t msm_soc_component_pointer(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_pcm_ops.pointer(substream);
+}
+
+static int msm_soc_component_mmap(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream, struct vm_area_struct *vma)
+{
+	return msm_pcm_ops.mmap(substream, vma);
+}
+
+static int msm_soc_component_close(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_pcm_ops.close(substream);
+}
+
+static int msm_soc_component_pcm_construct(struct snd_soc_component *component,
+		struct snd_soc_pcm_runtime *rtd)
+{
+	return msm_asoc_pcm_new(rtd);
+}
+
 static struct snd_soc_component_driver msm_soc_component = {
 	.name		= DRV_NAME,
-	.ops		= &msm_pcm_ops,
-	.pcm_new	= msm_asoc_pcm_new,
+	.open = msm_soc_component_open,
+	.prepare = msm_soc_component_prepare,
+	.copy_user = msm_soc_component_copy_user,
+	.hw_params = msm_soc_component_hw_params,
+	.ioctl = msm_soc_component_ioctl,
+	.trigger = msm_soc_component_trigger,
+	.pointer = msm_soc_component_pointer,
+	.mmap = msm_soc_component_mmap,
+	.close = msm_soc_component_close,
+	.pcm_construct = msm_soc_component_pcm_construct,
 };
 
 static int msm_pcm_probe(struct platform_device *pdev)

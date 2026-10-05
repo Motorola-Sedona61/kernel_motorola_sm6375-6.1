@@ -93,6 +93,7 @@ static void msm_pcm_route_event_handler(enum msm_pcm_routing_event event,
 		q6asm_cmd(pcm->audio_client, CMD_FLUSH);
 		q6asm_run(pcm->audio_client, 0, 0, 0);
 		/* fallthrough */
+		fallthrough;
 	default:
 		pr_err("%s: default event 0x%x\n", __func__, event);
 		break;
@@ -2298,10 +2299,43 @@ static int msm_asoc_pcm_new(struct snd_soc_pcm_runtime *rtd)
 	return ret;
 }
 
+static int msm_soc_component_open(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_pcm_ops.open(substream);
+}
+
+static int msm_soc_component_close(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_pcm_ops.close(substream);
+}
+
+static int msm_soc_component_prepare(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_pcm_ops.prepare(substream);
+}
+
+static int msm_soc_component_trigger(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream, int cmd)
+{
+	return msm_pcm_ops.trigger(substream, cmd);
+}
+
+static int msm_soc_component_pcm_construct(struct snd_soc_component *component,
+		struct snd_soc_pcm_runtime *rtd)
+{
+	return msm_asoc_pcm_new(rtd);
+}
+
 static struct snd_soc_component_driver msm_soc_component = {
 	.name		= DRV_NAME,
-	.ops            = &msm_pcm_ops,
-	.pcm_new        = msm_asoc_pcm_new,
+	.open = msm_soc_component_open,
+	.close = msm_soc_component_close,
+	.prepare = msm_soc_component_prepare,
+	.trigger = msm_soc_component_trigger,
+	.pcm_construct = msm_soc_component_pcm_construct,
 	.probe          = msm_pcm_loopback_probe,
 };
 

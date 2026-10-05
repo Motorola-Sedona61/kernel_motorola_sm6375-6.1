@@ -805,7 +805,7 @@ static void compr_event_handler(uint32_t opcode,
 				prtd->last_buffer = 0;
 			if (atomic_read(&prtd->drain)) {
 				if (bytes_available > 0) {
-					pr_debug("%s: send %d partial bytes at the end",
+					pr_debug("%s: send %llu partial bytes at the end",
 						   __func__, bytes_available);
 					atomic_set(&prtd->xrun, 0);
 					prtd->last_buffer = 1;
@@ -972,7 +972,7 @@ static void compr_event_handler(uint32_t opcode,
 			prtd->sample_rate = sample_rate;
 		}
 	}
-		/* Fallthrough here */
+		fallthrough;
 	case APR_BASIC_RSP_RESULT: {
 		switch (payload[0]) {
 		case ASM_SESSION_CMD_RUN_V2:
@@ -2132,7 +2132,8 @@ static int msm_compr_capture_open(struct snd_compr_stream *cstream)
 	return 0;
 }
 
-static int msm_compr_open(struct snd_compr_stream *cstream)
+static int msm_compr_open(struct snd_soc_component *audio_component,
+		struct snd_compr_stream *cstream)
 {
 	int ret = 0;
 
@@ -2327,7 +2328,8 @@ static int msm_compr_capture_free(struct snd_compr_stream *cstream)
 	return 0;
 }
 
-static int msm_compr_free(struct snd_compr_stream *cstream)
+static int msm_compr_free(struct snd_soc_component *audio_component,
+		struct snd_compr_stream *cstream)
 {
 	int ret = 0;
 
@@ -2350,7 +2352,8 @@ static bool msm_compr_validate_codec_compr(__u32 codec_id)
 }
 
 /* compress stream operations */
-static int msm_compr_set_params(struct snd_compr_stream *cstream,
+static int msm_compr_set_params(struct snd_soc_component *audio_component,
+		struct snd_compr_stream *cstream,
 				struct snd_compr_params *params)
 {
 	struct snd_compr_runtime *runtime = cstream->runtime;
@@ -2583,7 +2586,8 @@ static int msm_compr_wait_for_stream_avail(struct msm_compr_audio *prtd,
 	return rc;
 }
 
-static int msm_compr_trigger(struct snd_compr_stream *cstream, int cmd)
+static int msm_compr_trigger(struct snd_soc_component *audio_component,
+		struct snd_compr_stream *cstream, int cmd)
 {
 	struct snd_compr_runtime *runtime = cstream->runtime;
 	struct msm_compr_audio *prtd = runtime->private_data;
@@ -2760,6 +2764,7 @@ static int msm_compr_trigger(struct snd_compr_stream *cstream, int cmd)
 #if !IS_ENABLED(CONFIG_AUDIO_QGKI)
 		spin_unlock_irqrestore(&prtd->lock, flags);
 #endif
+		fallthrough;
 	case SND_COMPR_TRIGGER_DRAIN:
 		pr_debug("%s: SNDRV_COMPRESS_DRAIN\n", __func__);
 		/* Make sure all the data is sent to DSP before sending EOS */
@@ -3109,7 +3114,8 @@ static int msm_compr_trigger(struct snd_compr_stream *cstream, int cmd)
 	return rc;
 }
 
-static int msm_compr_pointer(struct snd_compr_stream *cstream,
+static int msm_compr_pointer(struct snd_soc_component *audio_component,
+		struct snd_compr_stream *cstream,
 					struct snd_compr_tstamp *arg)
 {
 	struct snd_compr_runtime *runtime = cstream->runtime;
@@ -3200,7 +3206,8 @@ static int msm_compr_pointer(struct snd_compr_stream *cstream,
 	return 0;
 }
 
-static int msm_compr_ack(struct snd_compr_stream *cstream,
+static int msm_compr_ack(struct snd_soc_component *audio_component,
+		struct snd_compr_stream *cstream,
 			size_t count)
 {
 	struct snd_compr_runtime *runtime = cstream->runtime;
@@ -3353,7 +3360,8 @@ static int msm_compr_capture_copy(struct snd_compr_stream *cstream,
 	return count;
 }
 
-static int msm_compr_copy(struct snd_compr_stream *cstream,
+static int msm_compr_copy(struct snd_soc_component *audio_component,
+		struct snd_compr_stream *cstream,
 				char __user *buf, size_t count)
 {
 	int ret = 0;
@@ -3366,7 +3374,8 @@ static int msm_compr_copy(struct snd_compr_stream *cstream,
 	return ret;
 }
 
-static int msm_compr_get_caps(struct snd_compr_stream *cstream,
+static int msm_compr_get_caps(struct snd_soc_component *audio_component,
+		struct snd_compr_stream *cstream,
 				struct snd_compr_caps *arg)
 {
 	struct snd_compr_runtime *runtime = cstream->runtime;
@@ -3384,7 +3393,8 @@ static int msm_compr_get_caps(struct snd_compr_stream *cstream,
 	return ret;
 }
 
-static int msm_compr_get_codec_caps(struct snd_compr_stream *cstream,
+static int msm_compr_get_codec_caps(struct snd_soc_component *audio_component,
+		struct snd_compr_stream *cstream,
 				struct snd_compr_codec_caps *codec)
 {
 	pr_debug("%s\n", __func__);
@@ -3438,7 +3448,8 @@ static int msm_compr_get_codec_caps(struct snd_compr_stream *cstream,
 	return 0;
 }
 
-static int msm_compr_set_metadata(struct snd_compr_stream *cstream,
+static int msm_compr_set_metadata(struct snd_soc_component *audio_component,
+		struct snd_compr_stream *cstream,
 				struct snd_compr_metadata *metadata)
 {
 	struct msm_compr_audio *prtd;
@@ -3498,7 +3509,8 @@ static int msm_compr_set_metadata(struct snd_compr_stream *cstream,
 	return 0;
 }
 
-static int msm_compr_get_metadata(struct snd_compr_stream *cstream,
+static int msm_compr_get_metadata(struct snd_soc_component *audio_component,
+		struct snd_compr_stream *cstream,
 				struct snd_compr_metadata *metadata)
 {
 	struct msm_compr_audio *prtd;
@@ -3575,7 +3587,8 @@ static int msm_compr_get_metadata(struct snd_compr_stream *cstream,
 
 
 #if IS_ENABLED(CONFIG_AUDIO_QGKI)
-static int msm_compr_set_next_track_param(struct snd_compr_stream *cstream,
+static int msm_compr_set_next_track_param(struct snd_soc_component *audio_component,
+		struct snd_compr_stream *cstream,
 				union snd_codec_options *codec_options)
 {
 	struct msm_compr_audio *prtd;
@@ -5755,7 +5768,7 @@ int msm_compr_new(struct snd_soc_pcm_runtime *rtd, int num)
 }
 EXPORT_SYMBOL(msm_compr_new);
 
-static struct snd_compr_ops msm_compr_ops = {
+static const struct snd_compress_ops msm_compr_ops = {
 	.open			= msm_compr_open,
 	.free			= msm_compr_free,
 	.trigger		= msm_compr_trigger,
@@ -5775,7 +5788,7 @@ static struct snd_compr_ops msm_compr_ops = {
 static struct snd_soc_component_driver msm_soc_component = {
 	.name		= DRV_NAME,
 	.probe		= msm_compr_probe,
-	.compr_ops	= &msm_compr_ops,
+	.compress_ops	= &msm_compr_ops,
 };
 
 static int msm_compr_dev_probe(struct platform_device *pdev)

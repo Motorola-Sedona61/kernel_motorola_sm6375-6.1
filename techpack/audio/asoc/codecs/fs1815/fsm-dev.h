@@ -121,7 +121,7 @@
 #endif
 #define pr_info(fmt, args...) printf("%s: " fmt "\n", __func__, ##args)
 #define pr_err(fmt, args...) printf("%s: " fmt "\n", __func__, ##args)
-#define pr_warning(fmt, args...) printf("%s: " fmt "\n", __func__, ##args)
+#define pr_warn(fmt, args...) printf("%s: " fmt "\n", __func__, ##args)
 #define logprint(fmt, args...) printf(fmt, ##args)
 #elif defined(BUILD_FSTOOL)
 #ifdef DEBUG
@@ -136,7 +136,7 @@
 #define pr_debug(fmt, args...) printf(fmt "\n", ##args)
 #define pr_info(fmt, args...) printf(fmt "\n", ##args)
 #define pr_err(fmt, args...) printf(fmt "\n", ##args)
-#define pr_warning(fmt, args...) printf(fmt "\n", ##args)
+#define pr_warn(fmt, args...) printf(fmt "\n", ##args)
 #define logprint(fmt, args...) printf(fmt, ##args)
 #elif defined(__NDK_BUILD__)
 #include<android/log.h>
@@ -146,7 +146,7 @@
 		LOG_TAG, "%s: " fmt, __func__, ##args)
 #define pr_err(fmt, args...) __android_log_print(ANDROID_LOG_ERROR,\
 		LOG_TAG, "%s: " fmt, __func__, ##args)
-#define pr_warning(fmt, args...) __android_log_print(ANDROID_LOG_ERROR,\
+#define pr_warn(fmt, args...) __android_log_print(ANDROID_LOG_ERROR,\
 		LOG_TAG, "%s: " fmt, __func__, ##args)
 #define logprint(fmt, args...) __android_log_print(ANDROID_LOG_INFO,\
 		LOG_TAG, fmt, ##args)
@@ -158,7 +158,7 @@
 		LOG_TAG, "%s: " fmt, __func__, ##args)
 #define pr_err(fmt, args...) __android_log_print(ANDROID_LOG_ERROR,\
 		LOG_TAG, "%s: " fmt, __func__, ##args)
-#define pr_warning(fmt, args...) __android_log_print(ANDROID_LOG_ERROR,\
+#define pr_warn(fmt, args...) __android_log_print(ANDROID_LOG_ERROR,\
 		LOG_TAG, "%s: " fmt, __func__, ##args)
 #define logprint(fmt, args...) __android_log_print(ANDROID_LOG_INFO,\
 		LOG_TAG, fmt, ##args)
@@ -166,7 +166,7 @@
 #define pr_debug(fmt, args...)
 #define pr_info(fmt, args...)
 #define pr_err(fmt, args...)
-#define pr_warning(fmt, args...)
+#define pr_warn(fmt, args...)
 #define logprint(fmt, args...)
 #endif // FSM_APP
 #endif // FSM_HAL_SUPPORT

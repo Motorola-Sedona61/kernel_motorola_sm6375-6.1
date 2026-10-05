@@ -3,6 +3,7 @@
  * Copyright (c) 2013-2020, The Linux Foundation. All rights reserved.
  */
 
+#include <linux/compat.h>
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/device.h>
@@ -353,8 +354,8 @@ static int msm_cpe_lsm_lab_stop(struct snd_pcm_substream *substream)
 	lsm_ops = &cpe->lsm_ops;
 	afe_ops = &cpe->afe_ops;
 	session = lsm_d->lsm_session;
-	if (rtd->cpu_dai)
-		dma_data = snd_soc_dai_get_dma_data(rtd->cpu_dai,
+	if (asoc_rtd_to_cpu(rtd, 0))
+		dma_data = snd_soc_dai_get_dma_data(asoc_rtd_to_cpu(rtd, 0),
 					substream);
 	if (!dma_data || !dma_data->dai_channel_ctl) {
 		dev_err(rtd->dev,
@@ -398,7 +399,7 @@ static int msm_cpe_lsm_lab_stop(struct snd_pcm_substream *substream)
 			"%s: PRE ch teardown failed, err = %d\n",
 			__func__, rc);
 	/* continue with teardown even if any intermediate step fails */
-	rc = dma_data->dai_channel_ctl(dma_data, rtd->cpu_dai, false);
+	rc = dma_data->dai_channel_ctl(dma_data, asoc_rtd_to_cpu(rtd, 0), false);
 	if (rc)
 		dev_err(rtd->dev,
 			"%s: open data failed %d\n", __func__, rc);
@@ -581,7 +582,7 @@ static int msm_cpe_lab_thread(void *data)
 	pr_debug("%s: Lab thread start\n", __func__);
 	init_completion(&lab_d->comp);
 
-	if (PCM_RUNTIME_CHECK(substream)) {
+	if (snd_BUG_ON(!substream || !substream->runtime)) {
 		rc = -EINVAL;
 		goto done;
 	}
@@ -595,8 +596,8 @@ static int msm_cpe_lab_thread(void *data)
 	}
 
 	rtd = substream->private_data;
-	if (rtd->cpu_dai)
-		dma_data = snd_soc_dai_get_dma_data(rtd->cpu_dai,
+	if (asoc_rtd_to_cpu(rtd, 0))
+		dma_data = snd_soc_dai_get_dma_data(asoc_rtd_to_cpu(rtd, 0),
 					substream);
 	if (!dma_data || !dma_data->dai_channel_ctl) {
 		pr_err("%s: dma_data is not set\n", __func__);
@@ -617,7 +618,7 @@ static int msm_cpe_lab_thread(void *data)
 		goto done;
 	}
 
-	rc = dma_data->dai_channel_ctl(dma_data, rtd->cpu_dai, true);
+	rc = dma_data->dai_channel_ctl(dma_data, asoc_rtd_to_cpu(rtd, 0), true);
 	if (rc) {
 		dev_err(rtd->dev,
 			"%s: open data failed %d\n", __func__, rc);
@@ -1104,8 +1105,8 @@ static int msm_cpe_lsm_ioctl_shared(struct snd_pcm_substream *substream,
 			"%s: %s, lab_enable = %d\n",
 			__func__, "SNDRV_LSM_LAB_CONTROL",
 			session->lab_enable);
-		if (rtd->cpu_dai)
-			dma_data = snd_soc_dai_get_dma_data(rtd->cpu_dai,
+		if (asoc_rtd_to_cpu(rtd, 0))
+			dma_data = snd_soc_dai_get_dma_data(asoc_rtd_to_cpu(rtd, 0),
 						substream);
 		if (!dma_data || !dma_data->dai_channel_ctl) {
 			dev_err(rtd->dev,
@@ -1267,7 +1268,7 @@ static int msm_cpe_lsm_ioctl_shared(struct snd_pcm_substream *substream,
 					"%s: Lab Disable Failed rc %d\n",
 				       __func__, rc);
 
-			dma_data = snd_soc_dai_get_dma_data(rtd->cpu_dai,
+			dma_data = snd_soc_dai_get_dma_data(asoc_rtd_to_cpu(rtd, 0),
 							substream);
 			if (!dma_data || !dma_data->dai_channel_ctl)
 				dev_err(rtd->dev,
@@ -3294,13 +3295,71 @@ static const struct snd_pcm_ops msm_cpe_lsm_ops = {
 	.copy_user = msm_cpe_lsm_copy,
 	.hw_params = msm_cpe_lsm_hwparams,
 #if IS_ENABLED(CONFIG_AUDIO_QGKI)
-	.compat_ioctl = msm_cpe_lsm_ioctl_compat,
 #endif /* CONFIG_AUDIO_QGKI */
 };
 
+static int msm_soc_cpe_component_open(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_cpe_lsm_ops.open(substream);
+}
+
+static int msm_soc_cpe_component_close(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_cpe_lsm_ops.close(substream);
+}
+
+static int msm_soc_cpe_component_ioctl(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream, unsigned int cmd, void *arg)
+{
+#if IS_ENABLED(CONFIG_COMPAT) && IS_ENABLED(CONFIG_AUDIO_QGKI)
+	if (in_compat_syscall())
+		return msm_cpe_lsm_ioctl_compat(substream, cmd, arg);
+#endif
+	return msm_cpe_lsm_ops.ioctl(substream, cmd, arg);
+}
+
+static int msm_soc_cpe_component_prepare(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_cpe_lsm_ops.prepare(substream);
+}
+
+static int msm_soc_cpe_component_trigger(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream, int cmd)
+{
+	return msm_cpe_lsm_ops.trigger(substream, cmd);
+}
+
+static snd_pcm_uframes_t msm_soc_cpe_component_pointer(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_cpe_lsm_ops.pointer(substream);
+}
+
+static int msm_soc_cpe_component_copy_user(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream, int channel, unsigned long pos, void __user *buf, unsigned long bytes)
+{
+	return msm_cpe_lsm_ops.copy_user(substream, channel, pos, buf, bytes);
+}
+
+static int msm_soc_cpe_component_hw_params(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream, struct snd_pcm_hw_params *params)
+{
+	return msm_cpe_lsm_ops.hw_params(substream, params);
+}
+
 static struct snd_soc_component_driver msm_soc_cpe_component = {
 	.name = DRV_NAME,
-	.ops = &msm_cpe_lsm_ops,
+	.open = msm_soc_cpe_component_open,
+	.close = msm_soc_cpe_component_close,
+	.ioctl = msm_soc_cpe_component_ioctl,
+	.prepare = msm_soc_cpe_component_prepare,
+	.trigger = msm_soc_cpe_component_trigger,
+	.pointer = msm_soc_cpe_component_pointer,
+	.copy_user = msm_soc_cpe_component_copy_user,
+	.hw_params = msm_soc_cpe_component_hw_params,
 	.probe = msm_asoc_cpe_lsm_probe,
 };
 

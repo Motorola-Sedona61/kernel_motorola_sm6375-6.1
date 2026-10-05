@@ -523,11 +523,11 @@ static irqreturn_t wsa883x_pa_on_err_handle_irq(int irq, void *data)
 	if (!component)
 		return IRQ_NONE;
 
-	pa_fsm_sta = (snd_soc_component_read32(component, WSA883X_PA_FSM_STA)
+	pa_fsm_sta = (snd_soc_component_read(component, WSA883X_PA_FSM_STA)
 			& 0x70);
 
 	if (pa_fsm_sta)
-		pa_fsm_err = snd_soc_component_read32(component,
+		pa_fsm_err = snd_soc_component_read(component,
 						WSA883X_PA_FSM_ERR_COND);
 	pr_err_ratelimited("%s: irq: %d, pa_fsm_sta: %d, pa_fsm_err: %d\n",
 		__func__, irq, pa_fsm_sta, pa_fsm_err);
@@ -1263,19 +1263,19 @@ static int32_t wsa883x_temp_reg_read(struct snd_soc_component *component,
 
 	snd_soc_component_update_bits(component, WSA883X_TADC_VALUE_CTL,
 				0x01, 0x00);
-	wsa_temp_reg->dmeas_msb = snd_soc_component_read32(
+	wsa_temp_reg->dmeas_msb = snd_soc_component_read(
 					component, WSA883X_TEMP_MSB);
-	wsa_temp_reg->dmeas_lsb = snd_soc_component_read32(
+	wsa_temp_reg->dmeas_lsb = snd_soc_component_read(
 					component, WSA883X_TEMP_LSB);
 	snd_soc_component_update_bits(component, WSA883X_TADC_VALUE_CTL,
 					0x01, 0x01);
-	wsa_temp_reg->d1_msb = snd_soc_component_read32(
+	wsa_temp_reg->d1_msb = snd_soc_component_read(
 					component, WSA883X_OTP_REG_1);
-	wsa_temp_reg->d1_lsb = snd_soc_component_read32(
+	wsa_temp_reg->d1_lsb = snd_soc_component_read(
 					component, WSA883X_OTP_REG_2);
-	wsa_temp_reg->d2_msb = snd_soc_component_read32(
+	wsa_temp_reg->d2_msb = snd_soc_component_read(
 					component, WSA883X_OTP_REG_3);
-	wsa_temp_reg->d2_lsb = snd_soc_component_read32(
+	wsa_temp_reg->d2_lsb = snd_soc_component_read(
 					component, WSA883X_OTP_REG_4);
 
 	snd_soc_component_update_bits(component, WSA883X_PA_FSM_BYP,
@@ -1374,11 +1374,11 @@ static int wsa883x_codec_probe(struct snd_soc_component *component)
 	dev = wsa883x->swr_slave;
 	wsa883x->component = component;
 
-	variant = (snd_soc_component_read32(component, WSA883X_OTP_REG_0)
+	variant = (snd_soc_component_read(component, WSA883X_OTP_REG_0)
 					    & 0x0F);
 	wsa883x->variant = variant;
 
-	version = (snd_soc_component_read32(component, WSA883X_CHIP_ID0)
+	version = (snd_soc_component_read(component, WSA883X_CHIP_ID0)
 					    & 0xFF);
 	wsa883x->version = version;
 

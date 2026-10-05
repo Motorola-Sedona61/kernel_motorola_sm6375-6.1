@@ -34126,12 +34126,44 @@ void msm_routing_pcm_free(struct snd_pcm *pcm)
 	msm_pcm_routing_hwdep_free(pcm);
 }
 
+static int msm_soc_routing_component_hw_params(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream, struct snd_pcm_hw_params *params)
+{
+	return msm_routing_pcm_ops.hw_params(substream, params);
+}
+
+static int msm_soc_routing_component_close(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_routing_pcm_ops.close(substream);
+}
+
+static int msm_soc_routing_component_prepare(struct snd_soc_component *component,
+		struct snd_pcm_substream *substream)
+{
+	return msm_routing_pcm_ops.prepare(substream);
+}
+
+static int msm_soc_routing_component_pcm_construct(struct snd_soc_component *component,
+		struct snd_soc_pcm_runtime *rtd)
+{
+	return msm_routing_pcm_new(rtd);
+}
+
+static void msm_soc_routing_component_pcm_destruct(struct snd_soc_component *component,
+		struct snd_pcm *pcm)
+{
+	msm_routing_pcm_free(pcm);
+}
+
 static struct snd_soc_component_driver msm_soc_routing_component = {
 	.name		= DRV_NAME,
-	.ops		= &msm_routing_pcm_ops,
+	.hw_params = msm_soc_routing_component_hw_params,
+	.close = msm_soc_routing_component_close,
+	.prepare = msm_soc_routing_component_prepare,
 	.probe		= msm_routing_probe,
-	.pcm_new	= msm_routing_pcm_new,
-	.pcm_free	= msm_routing_pcm_free,
+	.pcm_construct = msm_soc_routing_component_pcm_construct,
+	.pcm_destruct = msm_soc_routing_component_pcm_destruct,
 };
 
 static int msm_routing_pcm_probe(struct platform_device *pdev)

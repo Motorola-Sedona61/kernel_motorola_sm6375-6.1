@@ -4,7 +4,7 @@
  */
 
 #include <linux/module.h>
-#include <sound/wcd-dsp-mgr.h>
+#include <asoc/wcd-dsp-mgr.h>
 #include "audio-ext-clk-up.h"
 
 static int __init wcd9xxx_soc_init(void)

@@ -11,7 +11,7 @@
 
 static char *audio_ssr_domains[] = {
 	"adsp",
-	"modem"
+	"mpss"
 };
 
 struct audio_ssr_handle {

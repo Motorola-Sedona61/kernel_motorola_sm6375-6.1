@@ -75,7 +75,6 @@ static int aw_cali_write_cali_re_to_file(int32_t cali_re, int channel)
 	struct file *fp = NULL;
 	char buf[50] = {0};
 	loff_t pos = 0;
-	mm_segment_t fs;
 
 	fp = filp_open(AWINIC_CALI_FILE, O_RDWR | O_CREAT, 0644);
 	if (IS_ERR(fp)) {
@@ -88,12 +87,7 @@ static int aw_cali_write_cali_re_to_file(int32_t cali_re, int channel)
 
 	snprintf(buf, sizeof(buf), "%10d", cali_re);
 
-	fs = get_fs();
-	set_fs(KERNEL_DS);
-
 	aw_fs_write(fp, buf, strlen(buf), &pos);
-
-	set_fs(fs);
 
 	pr_info("%s: channel:%d buf:%s cali_re:%d\n",
 		__func__, channel, buf, cali_re);
@@ -110,7 +104,6 @@ static int aw_cali_get_read_cali_re(int32_t *cali_re, int channel)
 	char *buf = NULL;
 	int32_t int_cali_re = 0;
 	loff_t pos = 0;
-	mm_segment_t fs;
 
 	fp = filp_open(AWINIC_CALI_FILE, O_RDONLY, 0);
 	if (IS_ERR(fp)) {
@@ -133,12 +126,7 @@ static int aw_cali_get_read_cali_re(int32_t *cali_re, int channel)
 		return -EINVAL;
 	}
 
-	fs = get_fs();
-	set_fs(KERNEL_DS);
-
 	aw_fs_read(fp, buf, f_size, &pos);
-
-	set_fs(fs);
 
 	if (sscanf(buf, "%d", &int_cali_re) == 1)
 		*cali_re = int_cali_re;
