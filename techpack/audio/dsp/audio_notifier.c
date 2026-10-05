@@ -6,7 +6,7 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <soc/qcom/subsystem_notif.h>
-#include <soc/qcom/service-notifier.h>
+#include <linux/soc/qcom/pdr.h>
 #include <dsp/audio_notifier.h>
 #include "audio_ssr.h"
 #include "audio_pdr.h"
@@ -165,7 +165,7 @@ static int audio_notifier_reg_service(int service, int domain)
 			service_data[service][domain].domain_id,
 			service_data[service][domain].nb, &curr_state);
 
-		if (curr_state == SERVREG_NOTIF_SERVICE_STATE_UP_V01)
+		if (curr_state == SERVREG_SERVICE_STATE_UP)
 			curr_state = AUDIO_NOTIFIER_SERVICE_UP;
 		else
 			curr_state = AUDIO_NOTIFIER_SERVICE_DOWN;
@@ -424,11 +424,11 @@ static int audio_notifier_convert_opcode(unsigned long opcode,
 
 	switch (opcode) {
 	case SUBSYS_AFTER_SHUTDOWN:
-	case SERVREG_NOTIF_SERVICE_STATE_DOWN_V01:
+	case SERVREG_SERVICE_STATE_DOWN:
 		*notifier_opcode = AUDIO_NOTIFIER_SERVICE_DOWN;
 		break;
 	case SUBSYS_AFTER_POWERUP:
-	case SERVREG_NOTIF_SERVICE_STATE_UP_V01:
+	case SERVREG_SERVICE_STATE_UP:
 		*notifier_opcode = AUDIO_NOTIFIER_SERVICE_UP;
 		break;
 	default:

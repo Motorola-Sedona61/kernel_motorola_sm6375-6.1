@@ -24,7 +24,7 @@
 #include <linux/of_platform.h>
 #include <linux/ratelimit.h>
 #include <soc/qcom/boot_stats.h>
-#include <soc/qcom/subsystem_restart.h>
+#include <dsp/audio_remoteproc.h>
 #include <linux/qcom_scm.h>
 #include <soc/snd_event.h>
 #include <dsp/apr_audio-v2.h>
@@ -332,9 +332,12 @@ int apr_load_adsp_image(void)
 
 	mutex_lock(&q6.lock);
 	if (apr_get_q6_state() == APR_SUBSYS_UP) {
-		q6.pil = subsystem_get("adsp");
+		if (!q6.pil)
+			q6.pil = audio_rproc_get_boot(apr_priv->dev,
+					"qcom,rproc-handle", NULL);
 		if (IS_ERR(q6.pil)) {
 			rc = PTR_ERR(q6.pil);
+			q6.pil = NULL;
 			pr_err("APR: Unable to load q6 image, error:%d\n", rc);
 		} else {
 			apr_set_q6_state(APR_SUBSYS_LOADED);
@@ -1171,6 +1174,8 @@ static void apr_cleanup(void)
 		flush_workqueue(apr_reset_workqueue);
 		destroy_workqueue(apr_reset_workqueue);
 	}
+	audio_rproc_shutdown_put(q6.pil);
+	q6.pil = NULL;
 	mutex_destroy(&q6.lock);
 	for (i = 0; i < APR_DEST_MAX; i++) {
 		for (j = 0; j < APR_CLIENT_MAX; j++) {

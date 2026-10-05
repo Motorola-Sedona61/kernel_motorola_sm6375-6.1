@@ -395,6 +395,7 @@
 	audio_apr: qcom,msm-audio-apr {
 		compatible = "qcom,msm-audio-apr";
 		qcom,subsys-name = "apr_adsp";
+		qcom,rproc-handle = <&adsp_pas>;
 
 		msm_audio_ion: qcom,msm-audio-ion {
 			compatible = "qcom,msm-audio-ion";
@@ -497,6 +498,8 @@
 	adsp_loader: qcom,msm-adsp-loader {
 		status = "ok";
 		compatible = "qcom,adsp-loader";
+		qcom,rproc-handle = <&adsp_pas>;
+		qcom,modem-rproc-handle = <&modem_pas>;
 		qcom,adsp-state = <0>;
 	};
 

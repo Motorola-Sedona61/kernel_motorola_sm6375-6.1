@@ -4,7 +4,8 @@
  */
 
 #include <linux/module.h>
-#include <soc/qcom/subsystem_restart.h>
+#include <linux/slab.h>
+#include <linux/remoteproc/qcom_rproc.h>
 #include <soc/qcom/subsystem_notif.h>
 #include "audio_ssr.h"
 
@@ -13,40 +14,74 @@ static char *audio_ssr_domains[] = {
 	"modem"
 };
 
-/**
- * audio_ssr_register -
- *        register to SSR framework
- *
- * @domain_id: Domain ID to register with
- * @nb: notifier block
- *
- * Returns handle pointer on success or error PTR on failure
- */
+struct audio_ssr_handle {
+	struct notifier_block bridge;
+	struct notifier_block *client;
+	void *remote;
+};
+
+static int audio_ssr_notify(struct notifier_block *nb, unsigned long event,
+			    void *data)
+{
+	struct audio_ssr_handle *handle =
+		container_of(nb, struct audio_ssr_handle, bridge);
+	unsigned long legacy;
+
+	switch (event) {
+	case QCOM_SSR_BEFORE_POWERUP:
+		legacy = SUBSYS_BEFORE_POWERUP;
+		break;
+	case QCOM_SSR_AFTER_POWERUP:
+		legacy = SUBSYS_AFTER_POWERUP;
+		break;
+	case QCOM_SSR_BEFORE_SHUTDOWN:
+		legacy = SUBSYS_BEFORE_SHUTDOWN;
+		break;
+	case QCOM_SSR_AFTER_SHUTDOWN:
+		legacy = SUBSYS_AFTER_SHUTDOWN;
+		break;
+	default:
+		return NOTIFY_DONE;
+	}
+	return handle->client->notifier_call(handle->client, legacy, data);
+}
+
 void *audio_ssr_register(int domain_id, struct notifier_block *nb)
 {
-	if ((domain_id < 0) ||
-	    (domain_id >= AUDIO_SSR_DOMAIN_MAX)) {
-		pr_err("%s: Invalid service ID %d\n", __func__, domain_id);
-		return ERR_PTR(-EINVAL);
-	}
+	struct audio_ssr_handle *handle;
+	int ret;
 
-	return subsys_notif_register_notifier(
-		audio_ssr_domains[domain_id], nb);
+	if (domain_id < 0 || domain_id >= AUDIO_SSR_DOMAIN_MAX || !nb)
+		return ERR_PTR(-EINVAL);
+	if (!IS_ENABLED(CONFIG_QCOM_RPROC_COMMON))
+		return ERR_PTR(-ENODEV);
+	handle = kzalloc(sizeof(*handle), GFP_KERNEL);
+	if (!handle)
+		return ERR_PTR(-ENOMEM);
+	handle->client = nb;
+	handle->bridge.notifier_call = audio_ssr_notify;
+	handle->bridge.priority = nb->priority;
+	handle->remote = qcom_register_ssr_notifier(audio_ssr_domains[domain_id],
+					     &handle->bridge);
+	if (IS_ERR_OR_NULL(handle->remote)) {
+		ret = handle->remote ? PTR_ERR(handle->remote) : -ENODEV;
+		kfree(handle);
+		return ERR_PTR(ret);
+	}
+	return handle;
 }
 EXPORT_SYMBOL(audio_ssr_register);
 
-/**
- * audio_ssr_deregister -
- *        Deregister handle from SSR framework
- *
- * @handle: SSR handle
- * @nb: notifier block
- *
- * Returns 0 on success or error on failure
- */
-int audio_ssr_deregister(void *handle, struct notifier_block *nb)
+int audio_ssr_deregister(void *opaque, struct notifier_block *nb)
 {
-	return subsys_notif_unregister_notifier(handle, nb);
+	struct audio_ssr_handle *handle = opaque;
+	int ret;
+
+	if (IS_ERR_OR_NULL(handle) || handle->client != nb)
+		return -EINVAL;
+	ret = qcom_unregister_ssr_notifier(handle->remote, &handle->bridge);
+	if (!ret)
+		kfree(handle);
+	return ret;
 }
 EXPORT_SYMBOL(audio_ssr_deregister);
-
