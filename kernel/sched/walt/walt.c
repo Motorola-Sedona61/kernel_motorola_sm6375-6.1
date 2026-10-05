@@ -210,7 +210,7 @@ static const unsigned int top_tasks_bitmap_size =
 
 __read_mostly unsigned int walt_scale_demand_divisor;
 
-#define SCHED_PRINT(arg)	printk_deferred("%s=%llu", #arg, arg)
+#define SCHED_PRINT(arg)	printk_deferred("%s=%llu", #arg, (unsigned long long)(arg))
 #define STRG(arg)		#arg
 
 void walt_task_dump(struct task_struct *p)
