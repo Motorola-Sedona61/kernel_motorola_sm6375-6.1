@@ -62,6 +62,10 @@ struct snd_compress_ops {
 	int (*get_codec_caps)(struct snd_soc_component *component,
 			      struct snd_compr_stream *stream,
 			      struct snd_compr_codec_caps *codec);
+#ifdef CONFIG_AUDIO_QGKI
+	int (*set_next_track_param)(struct snd_soc_component *component,
+		struct snd_compr_stream *stream, union snd_codec_options *options);
+#endif
 };
 
 struct snd_soc_component_driver {
@@ -517,5 +521,11 @@ void snd_soc_pcm_component_pm_runtime_put(struct snd_soc_pcm_runtime *rtd,
 int snd_soc_pcm_component_ack(struct snd_pcm_substream *substream);
 void snd_soc_pcm_component_delay(struct snd_pcm_substream *substream,
 				 snd_pcm_sframes_t *cpu_delay, snd_pcm_sframes_t *codec_delay);
+
+
+#ifdef CONFIG_AUDIO_QGKI
+int snd_soc_component_compr_set_next_track_param(struct snd_compr_stream *stream,
+		union snd_codec_options *options);
+#endif
 
 #endif /* __SOC_COMPONENT_H */

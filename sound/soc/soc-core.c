@@ -3541,3 +3541,12 @@ MODULE_AUTHOR("Liam Girdwood, lrg@slimlogic.co.uk");
 MODULE_DESCRIPTION("ALSA SoC Core");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("platform:soc-audio");
+
+#ifdef CONFIG_AUDIO_QGKI
+void snd_soc_card_change_online_state(struct snd_soc_card *card, int online)
+{
+	if (card && card->snd_card)
+		snd_card_change_online_state(card->snd_card, online);
+}
+EXPORT_SYMBOL(snd_soc_card_change_online_state);
+#endif

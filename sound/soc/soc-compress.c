@@ -508,12 +508,23 @@ static int soc_compr_get_metadata(struct snd_compr_stream *cstream,
 }
 
 /* ASoC Compress operations */
+#ifdef CONFIG_AUDIO_QGKI
+static int soc_compr_set_next_track_param(struct snd_compr_stream *stream,
+		union snd_codec_options *options)
+{
+	return snd_soc_component_compr_set_next_track_param(stream, options);
+}
+#endif
+
 static struct snd_compr_ops soc_compr_ops = {
 	.open		= soc_compr_open,
 	.free		= soc_compr_free,
 	.set_params	= soc_compr_set_params,
 	.set_metadata   = soc_compr_set_metadata,
 	.get_metadata	= soc_compr_get_metadata,
+#ifdef CONFIG_AUDIO_QGKI
+	.set_next_track_param = soc_compr_set_next_track_param,
+#endif
 	.get_params	= soc_compr_get_params,
 	.trigger	= soc_compr_trigger,
 	.pointer	= soc_compr_pointer,
@@ -530,6 +541,9 @@ static struct snd_compr_ops soc_compr_dyn_ops = {
 	.get_params	= soc_compr_get_params,
 	.set_metadata   = soc_compr_set_metadata,
 	.get_metadata	= soc_compr_get_metadata,
+#ifdef CONFIG_AUDIO_QGKI
+	.set_next_track_param = soc_compr_set_next_track_param,
+#endif
 	.trigger	= soc_compr_trigger_fe,
 	.pointer	= soc_compr_pointer,
 	.ack		= soc_compr_ack,

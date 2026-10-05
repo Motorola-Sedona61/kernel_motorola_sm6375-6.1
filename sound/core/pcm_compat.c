@@ -652,5 +652,11 @@ static long snd_pcm_ioctl_compat(struct file *file, unsigned int cmd, unsigned l
 #endif /* CONFIG_X86_X32_ABI */
 	}
 
+#ifdef CONFIG_FOGOS_LEGACY_AUDIO
+	if ((_IOC_TYPE(cmd) == 'U' || _IOC_TYPE(cmd) == 'C') &&
+	    substream->ops->ioctl)
+		return substream->ops->ioctl(substream, cmd, argp);
+#endif
+
 	return -ENOIOCTLCMD;
 }
