@@ -90,3 +90,10 @@ obj-y += soc/
 obj-y += dsp/
 obj-y += ipc/
 obj-y += asoc/
+
+# Limit compatibility/config headers to the retained audio subtree.
+subdir-ccflags-y += -I$(srctree)/techpack/audio/include
+subdir-ccflags-y += -I$(srctree)/techpack/audio/include/uapi/audio
+subdir-ccflags-y += -include $(srctree)/techpack/audio/config/holiautoconf.h
+export CONFIG_SND_SOC_FS1815=m
+subdir-ccflags-y += -DCONFIG_SND_SOC_FS1815=1
