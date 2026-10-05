@@ -52,3 +52,26 @@
 &pil_ipa_fw_mem { reg = <0x0 0x8aa00000 0x0 0x00010000>; };
 &pil_ipa_gsi_mem { reg = <0x0 0x8aa10000 0x0 0x0000a000>; };
 &pil_gpu_micro_code_mem { reg = <0x0 0x8aa1a000 0x0 0x00002000>; };
+
+/* Preserve the fogos contiguous audio pool for clients without an SMMU. */
+/ {
+	reserved-memory {
+		user_contig_mem: user_contig_region {
+			compatible = "shared-dma-pool";
+			alloc-ranges = <0 0 0 0xffffffff>;
+			reusable;
+			alignment = <0 0x400000>;
+			size = <0 0x1000000>;
+		};
+	};
+};
+
+&soc {
+	qcom,dma-heaps {
+		qcom,audio {
+			qcom,dma-heap-name = "audio";
+			qcom,dma-heap-type = <HEAP_TYPE_CMA>;
+			memory-region = <&user_contig_mem>;
+		};
+	};
+};
