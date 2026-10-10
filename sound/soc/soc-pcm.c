@@ -276,28 +276,6 @@ static void dpcm_set_be_update_state(struct snd_soc_pcm_runtime *be,
 	be->dpcm[stream].runtime_update = state;
 }
 
-#ifdef CONFIG_FOGOS_LEGACY_AUDIO
-static const struct snd_pcm_hardware no_host_hardware = {
-	.info			= SNDRV_PCM_INFO_MMAP |
-				  SNDRV_PCM_INFO_MMAP_VALID |
-				  SNDRV_PCM_INFO_INTERLEAVED |
-				  SNDRV_PCM_INFO_PAUSE |
-				  SNDRV_PCM_INFO_RESUME,
-	.formats		= SNDRV_PCM_FMTBIT_S16_LE |
-				  SNDRV_PCM_FMTBIT_S32_LE,
-	.period_bytes_min	= PAGE_SIZE >> 2,
-	.period_bytes_max	= PAGE_SIZE >> 1,
-	.periods_min		= 2,
-	.periods_max		= 4,
-	/*
-	 * Increase the max buffer bytes as PAGE_SIZE bytes is
-	 * not enough to encompass all the scenarios sent by
-	 * userspapce.
-	 */
-	.buffer_bytes_max	= PAGE_SIZE * 4,
-};
-#endif
-
 /**
  * snd_soc_runtime_action() - Increment/Decrement active count for
  * PCM runtime components
@@ -822,13 +800,6 @@ static int __soc_pcm_open(struct snd_soc_pcm_runtime *rtd,
 	if (ret < 0)
 		goto err;
 
-#ifdef CONFIG_FOGOS_LEGACY_AUDIO
-	if (rtd->dai_link->no_host_mode == SND_SOC_DAI_LINK_NO_HOST) {
-		substream->hw_no_buffer = 1;
-		snd_soc_set_runtime_hwparams(substream, &no_host_hardware);
-	}
-#endif
-
 	ret = snd_soc_link_startup(substream);
 	if (ret < 0)
 		goto err;
@@ -992,11 +963,6 @@ static int soc_pcm_hw_clean(struct snd_soc_pcm_runtime *rtd,
 		if (snd_soc_dai_stream_valid(dai, substream->stream))
 			snd_soc_dai_hw_free(dai, substream, rollback);
 
-#ifdef CONFIG_FOGOS_LEGACY_AUDIO
-	if (rtd->dai_link->no_host_mode == SND_SOC_DAI_LINK_NO_HOST)
-		snd_pcm_lib_free_pages(substream);
-#endif
-
 	return 0;
 }
 
@@ -1039,15 +1005,6 @@ static int __soc_pcm_hw_params(struct snd_soc_pcm_runtime *rtd,
 	ret = soc_pcm_params_symmetry(substream, params);
 	if (ret)
 		goto out;
-
-#ifdef CONFIG_FOGOS_LEGACY_AUDIO
-	if (rtd->dai_link->no_host_mode == SND_SOC_DAI_LINK_NO_HOST &&
-	    rtd->dai_link->be_hw_params_fixup) {
-		ret = snd_soc_link_be_hw_params_fixup(rtd, params);
-		if (ret < 0)
-			goto out;
-	}
-#endif
 
 	ret = snd_soc_link_hw_params(substream, params);
 	if (ret < 0)
@@ -1114,15 +1071,6 @@ static int __soc_pcm_hw_params(struct snd_soc_pcm_runtime *rtd,
 	}
 
 	ret = snd_soc_pcm_component_hw_params(substream, params);
-#ifdef CONFIG_FOGOS_LEGACY_AUDIO
-	if (ret >= 0 && rtd->dai_link->no_host_mode == SND_SOC_DAI_LINK_NO_HOST) {
-		substream->dma_buffer.dev.type = SNDRV_DMA_TYPE_DEV;
-		substream->dma_buffer.dev.dev = rtd->dev;
-		substream->dma_buffer.private_data = NULL;
-		ret = snd_pcm_lib_malloc_pages(substream, PAGE_SIZE);
-	}
-#endif
-
 out:
 	if (ret < 0)
 		soc_pcm_hw_clean(rtd, substream, 1);

@@ -1256,24 +1256,3 @@ int snd_soc_pcm_component_ack(struct snd_pcm_substream *substream)
 
 	return 0;
 }
-
-#ifdef CONFIG_AUDIO_QGKI
-int snd_soc_component_compr_set_next_track_param(struct snd_compr_stream *stream,
-		union snd_codec_options *options)
-{
-	struct snd_soc_pcm_runtime *rtd = stream->private_data;
-	struct snd_soc_component *component;
-	int i, ret;
-
-	for_each_rtd_components(rtd, i, component) {
-		if (component->driver->compress_ops &&
-		    component->driver->compress_ops->set_next_track_param) {
-			ret = component->driver->compress_ops->set_next_track_param(
-				component, stream, options);
-			return soc_component_ret(component, ret);
-		}
-	}
-	return -ENOTTY;
-}
-EXPORT_SYMBOL_GPL(snd_soc_component_compr_set_next_track_param);
-#endif

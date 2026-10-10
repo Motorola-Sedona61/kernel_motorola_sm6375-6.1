@@ -89,7 +89,6 @@ struct snd_compr_stream {
 	struct snd_dma_buffer dma_buffer;
 
 	ANDROID_KABI_RESERVE(1);
-
 };
 
 /**
@@ -140,10 +139,6 @@ struct snd_compr_ops {
 			struct snd_compr_codec_caps *codec);
 
 	ANDROID_KABI_RESERVE(1);
-#ifdef CONFIG_AUDIO_QGKI
-	int (*set_next_track_param)(struct snd_compr_stream *stream,
-			union snd_codec_options *codec_options);
-#endif
 };
 
 /**

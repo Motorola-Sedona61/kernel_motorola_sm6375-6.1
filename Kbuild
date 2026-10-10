@@ -99,4 +99,3 @@ obj-y			+= virt/
 obj-y			+= $(ARCH_DRIVERS)
 
 # Retained fogos APR/Q6 audio stack.
-obj-$(CONFIG_FOGOS_LEGACY_AUDIO) += techpack/

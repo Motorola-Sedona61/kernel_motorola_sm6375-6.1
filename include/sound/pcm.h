@@ -492,9 +492,6 @@ struct snd_pcm_substream {
 	unsigned int hw_opened: 1;
 	unsigned int managed_buffer_alloc:1;
 	ANDROID_KABI_RESERVE(1);
-#ifdef CONFIG_FOGOS_LEGACY_AUDIO
-	unsigned int hw_no_buffer:1;
-#endif
 };
 
 #define SUBSTREAM_BUSY(substream) ((substream)->ref_count > 0)
