@@ -176,7 +176,8 @@
 };
 
 &ufsphy_mem {
-		compatible = "qcom,ufs-phy-qmp-v4-yupik";
+		/* 6.1 renamed the stock Yupik PHY driver to Blair. */
+		compatible = "qcom,ufs-phy-qmp-v4-blair";
 
 		vdda-phy-supply = <&L7A>;
 		vdda-pll-supply = <&L4A>;
