@@ -26,6 +26,8 @@
   regulator-min-microvolt = <1050000>;
   regulator-max-microvolt = <1050000>;
   qcom,init-voltage = <1050000>;
+  /* Keep the inherited boot proxy vote within the fogos camera DVDD rail. */
+  qcom,proxy-consumer-voltage = <1050000 1050000>;
   status = "okay";
 };
 
