@@ -270,6 +270,7 @@
 	qcom,wcn-btfm = <1>;
 	qcom,tdm-max-slots = <4>;
 	qcom,mi2s-audio-intf = <0>;
+	qcom,wsa-max-devs = <0>;
 
 	qcom,audio-routing =
 		"AMIC1", "Analog Mic1",

@@ -22,6 +22,12 @@
 			qcom,dma-heap-type = <HEAP_TYPE_CMA>;
 			memory-region = <&qseecom_ta_mem>;
 		};
+		qcom,adsp {
+			qcom,dma-heap-name = "qcom,adsp";
+			qcom,dma-heap-type = <HEAP_TYPE_CMA>;
+			memory-region = <&adsp_heap_mem>;
+		};
+
 		qcom,secure_cdsp {
 			qcom,dma-heap-name = "qcom,secure-cdsp";
 			qcom,dma-heap-type = <HEAP_TYPE_SECURE_CARVEOUT>;
