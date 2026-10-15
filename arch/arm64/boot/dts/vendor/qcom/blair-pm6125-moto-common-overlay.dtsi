@@ -34,6 +34,8 @@
 		console-size = <RAMOOPS_CONSOLE_SIZE>;
 		pmsg-size = <RAMOOPS_PMSG_SIZE>;
 		record-size = <RAMOOPS_RECORD_SIZE>;
+		/* Bit flips survive the fogos warm reset; correct them in pstore. */
+		ecc-size = <16>;
 		no-dump-oops;
 	};
 
