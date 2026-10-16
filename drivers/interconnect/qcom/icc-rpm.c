@@ -24,6 +24,9 @@ static int qcom_icc_rpm_smd_send_msg(int ctx, int rsc_type, int rpm_id, u64 val)
 	rpm_kvp.data = (uint8_t *)&val;
 
 	ret = msm_rpm_send_message(ctx, rsc_type, rpm_id, &rpm_kvp, 1);
+	if (ret)
+		pr_err("RPM bandwidth vote failed: ctx=%d type=0x%08x id=%d bw=%llu error=%d\n",
+		       ctx, rsc_type, rpm_id, val, ret);
 
 	return ret;
 }
@@ -183,9 +186,10 @@ int qcom_icc_rpm_set(struct icc_node *src, struct icc_node *dst)
 		if (!qn->dirty)
 			continue;
 
-		qn->dirty = false;
-		if ((qn->mas_rpm_id == -1) && (qn->slv_rpm_id == -1))
+		if ((qn->mas_rpm_id == -1) && (qn->slv_rpm_id == -1)) {
+			qn->dirty = false;
 			continue;
+		}
 
 		/* send bandwidth request message to the RPM processor */
 		for (i = 0; i < RPM_NUM_CXT; i++) {
@@ -226,6 +230,8 @@ int qcom_icc_rpm_set(struct icc_node *src, struct icc_node *dst)
 				qn->last_sum_avg[i] = qn->sum_avg[i];
 			}
 		}
+		/* Failed votes must remain dirty for rollback or a later retry. */
+		qn->dirty = false;
 	}
 
 	return 0;

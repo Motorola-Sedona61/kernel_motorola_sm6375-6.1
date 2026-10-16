@@ -9,6 +9,7 @@
 #include <linux/completion.h>
 #include <linux/device.h>
 #include <linux/irq.h>
+#include <linux/jiffies.h>
 #include <linux/list.h>
 #include <linux/kernel.h>
 #include <linux/list.h>
@@ -24,6 +25,7 @@
 #include <linux/pm_domain.h>
 #include <linux/rbtree.h>
 #include <linux/rpmsg.h>
+#include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
 #include <linux/string.h>
@@ -42,6 +44,7 @@
 #define ERR "err\0"
 #define MAX_ERR_BUFFER_SIZE 128
 #define MAX_WAIT_ON_ACK 24
+#define RPM_ACK_TIMEOUT_MS 5000
 #define INIT_ERROR 1
 #define V1_PROTOCOL_VERSION 0x31726576 /* rev1 */
 #define V0_PROTOCOL_VERSION 0 /* rev0 */
@@ -594,6 +597,9 @@ struct msm_rpm_wait_data {
 	int errno;
 	struct completion ack;
 	bool delete_on_ack;
+	u32 resource_type;
+	u32 resource_id;
+	u32 set;
 };
 
 DEFINE_SPINLOCK(msm_rpm_list_lock);
@@ -958,7 +964,8 @@ static uint32_t msm_rpm_get_next_msg_id(void)
 	return id;
 }
 
-static int msm_rpm_add_wait_list(uint32_t msg_id, bool delete_on_ack)
+static int msm_rpm_add_wait_list(uint32_t msg_id, bool delete_on_ack,
+			       struct msm_rpm_request *request)
 {
 	unsigned long flags;
 	struct msm_rpm_wait_data *data =
@@ -972,6 +979,9 @@ static int msm_rpm_add_wait_list(uint32_t msg_id, bool delete_on_ack)
 	data->msg_id = msg_id;
 	data->errno = INIT_ERROR;
 	data->delete_on_ack = delete_on_ack;
+	data->resource_type = get_rsc_type(request->client_buf);
+	data->resource_id = get_rsc_id(request->client_buf);
+	data->set = get_set_type(request->client_buf);
 	spin_lock_irqsave(&msm_rpm_list_lock, flags);
 	if (delete_on_ack)
 		list_add_tail(&data->list, &msm_rpm_wait_list);
@@ -1253,7 +1263,11 @@ static int msm_rpm_send_data(struct msm_rpm_request *cdata,
 		return ret;
 	}
 
-	msm_rpm_add_wait_list(msg_id, noack);
+	ret = msm_rpm_add_wait_list(msg_id, noack, cdata);
+	if (ret) {
+		pr_err("Cannot track RPM request msg_id=%u: %d\n", msg_id, ret);
+		return 0;
+	}
 
 	ret = rpmsg_send(rpm->rpm_channel, &cdata->buf[0], msg_size);
 
@@ -1268,12 +1282,12 @@ static int msm_rpm_send_data(struct msm_rpm_request *cdata,
 	} else if (ret < 0) {
 		struct msm_rpm_wait_data *rc;
 
-		ret = 0;
 		pr_err("Failed to write data msg_size:%d ret:%d msg_id:%d\n",
 				msg_size, ret, msg_id);
 		rc = msm_rpm_get_entry_from_msg_id(msg_id);
 		if (rc)
 			msm_rpm_free_list_entry(rc);
+		ret = 0;
 	}
 	return ret;
 }
@@ -1315,6 +1329,8 @@ EXPORT_SYMBOL(msm_rpm_send_request_noack);
 int msm_rpm_wait_for_ack(uint32_t msg_id)
 {
 	struct msm_rpm_wait_data *elem;
+	unsigned long flags;
+	bool timed_out;
 	int rc = 0;
 
 	if (!msg_id) {
@@ -1332,11 +1348,26 @@ int msm_rpm_wait_for_ack(uint32_t msg_id)
 	if (!elem)
 		return rc;
 
-	wait_for_completion(&elem->ack);
-	trace_rpm_smd_ack_recvd(0, msg_id, 0xDEADFEED);
-
-	rc = elem->errno;
-	msm_rpm_free_list_entry(elem);
+	wait_for_completion_timeout(&elem->ack,
+				    msecs_to_jiffies(RPM_ACK_TIMEOUT_MS));
+	/*
+	 * Synchronous entries belong to this waiter. Serialize the final ACK
+	 * check and removal with the callback, including an ACK racing timeout.
+	 * A later ACK will find no entry, never a freed completion.
+	 */
+	spin_lock_irqsave(&msm_rpm_list_lock, flags);
+	timed_out = !elem->ack_recd;
+	rc = timed_out ? -ETIMEDOUT : elem->errno;
+	list_del(&elem->list);
+	spin_unlock_irqrestore(&msm_rpm_list_lock, flags);
+	if (timed_out)
+		pr_err("RPM ACK timeout after %ums: msg_id=%u set=%u resource_type=0x%08x resource_id=%u task=%s/%d\n",
+		       RPM_ACK_TIMEOUT_MS, msg_id, elem->set,
+		       elem->resource_type, elem->resource_id, current->comm,
+		       task_pid_nr(current));
+	else
+		trace_rpm_smd_ack_recvd(0, msg_id, 0xDEADFEED);
+	kfree(elem);
 
 	return rc;
 }
@@ -1519,32 +1550,21 @@ static int qcom_smd_rpm_callback(struct rpmsg_device *rpdev, void *ptr,
 	uint32_t msg_id;
 	int errno;
 	char buf[MAX_ERR_BUFFER_SIZE] = {0};
-	struct msm_rpm_wait_data *elem;
 	static DEFINE_SPINLOCK(rx_notify_lock);
 	unsigned long flags;
 
-	if (!size)
+	if (size < (rpm_msg_fmt_ver ? sizeof(struct msm_rpm_ack_msg_v1) :
+				    sizeof(struct msm_rpm_ack_msg_v0)) ||
+	    size > sizeof(buf)) {
+		pr_err_ratelimited("Invalid RPM ACK size %d\n", size);
 		return -EINVAL;
-
-	WARN_ON(size > MAX_ERR_BUFFER_SIZE);
+	}
 
 	spin_lock_irqsave(&rx_notify_lock, flags);
 	memcpy(buf, ptr, size);
 	msg_id = msm_rpm_get_msg_id_from_ack(buf);
 	errno = msm_rpm_get_error_from_ack(buf);
-	elem = msm_rpm_get_entry_from_msg_id(msg_id);
-
-	/*
-	 * It is applicable for sleep set requests
-	 * Sleep set requests are not added to the
-	 * wait queue list. Without this check we
-	 * run into NULL pointer deferrence issue.
-	 */
-	if (!elem) {
-		spin_unlock_irqrestore(&rx_notify_lock, flags);
-		return 0;
-	}
-
+	/* Lookup and completion share the list lock with waiter removal. */
 	msm_rpm_process_ack(msg_id, errno);
 	spin_unlock_irqrestore(&rx_notify_lock, flags);
 
