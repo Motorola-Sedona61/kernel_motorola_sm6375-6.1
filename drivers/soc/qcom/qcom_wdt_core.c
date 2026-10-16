@@ -39,6 +39,14 @@
 
 static struct msm_watchdog_data *wdog_data;
 
+/* Temporary, explicit progress-tracing opt-in. Keep the configured watchdog
+ * timeouts: software values alone do not establish hardware timer limits.
+ */
+static bool fogos_diag;
+module_param(fogos_diag, bool, 0400);
+MODULE_PARM_DESC(fogos_diag, "Fogos diagnostic: watchdog progress records, configured timeouts");
+static int fogos_ping_cpu = -1;
+
 static void qcom_wdt_dump_cpu_alive_mask(struct msm_watchdog_data *wdog_dd)
 {
 	static char alive_mask_buf[MASK_SIZE];
@@ -525,9 +533,18 @@ static void qcom_wdt_ping_other_cpus(struct msm_watchdog_data *wdog_dd)
 	for_each_cpu(cpu, cpu_online_mask) {
 		if (!wdog_dd->cpu_idle_pc_state[cpu]) {
 			wdog_dd->ping_start[cpu] = sched_clock();
+			if (fogos_diag) {
+				WRITE_ONCE(fogos_ping_cpu, cpu);
+				dev_info(wdog_dd->dev, "fogos-wdt: ping begin cpu=%d last_pet_ns=%llu\n",
+					 cpu, READ_ONCE(wdog_dd->last_pet));
+			}
 			smp_call_function_single(cpu,
 						 qcom_wdt_keep_alive_response,
 						 wdog_dd, 1);
+			if (fogos_diag) {
+				dev_info(wdog_dd->dev, "fogos-wdt: ping complete cpu=%d\n", cpu);
+				WRITE_ONCE(fogos_ping_cpu, -1);
+			}
 		}
 	}
 }
@@ -565,6 +582,9 @@ static __ref int qcom_wdt_kthread(void *arg)
 		} while (ret != 0);
 
 		wdog_dd->thread_start = sched_clock();
+		if (fogos_diag)
+			dev_info(wdog_dd->dev, "fogos-wdt: pet thread awake timer_ns=%llu thread_ns=%llu\n",
+				 READ_ONCE(wdog_dd->timer_fired), READ_ONCE(wdog_dd->thread_start));
 		for_each_cpu(cpu, cpu_present_mask)
 			wdog_dd->ping_start[cpu] = wdog_dd->ping_end[cpu] = 0;
 
@@ -583,6 +603,9 @@ static __ref int qcom_wdt_kthread(void *arg)
 			delay_time = msecs_to_jiffies(wdog_dd->pet_time);
 			wdog_dd->ops->reset_wdt(wdog_dd);
 			wdog_dd->last_pet = sched_clock();
+			if (fogos_diag)
+				dev_info(wdog_dd->dev, "fogos-wdt: pet complete ns=%llu\n",
+					 READ_ONCE(wdog_dd->last_pet));
 		}
 		/* Check again before scheduling
 		 * Could have been changed on other cpu
@@ -622,6 +645,29 @@ static int qcom_wdt_cpu_pm_notify(struct notifier_block *this,
 	return NOTIFY_OK;
 }
 
+/* Approximate lockless observation; never sends IPIs or pets the watchdog. */
+static ssize_t fogos_state_show(struct device *dev,
+			       struct device_attribute *attr, char *buf)
+{
+	struct msm_watchdog_data *wd = dev_get_drvdata(dev);
+	ssize_t len;
+	int cpu;
+
+	len = scnprintf(buf, PAGE_SIZE,
+		"now_ns=%llu last_pet_ns=%llu timer_fired_ns=%llu thread_start_ns=%llu bark_ms=%u pet_ms=%u ping_cpu=%d enabled=%d in_panic=%d user_pet_enabled=%d user_pet_complete=%d\n",
+		sched_clock(), READ_ONCE(wd->last_pet), READ_ONCE(wd->timer_fired),
+		READ_ONCE(wd->thread_start), wd->bark_time, wd->pet_time,
+		READ_ONCE(fogos_ping_cpu), READ_ONCE(wd->enabled), READ_ONCE(wd->in_panic),
+		READ_ONCE(wd->user_pet_enabled), READ_ONCE(wd->user_pet_complete));
+	for_each_possible_cpu(cpu)
+		len += scnprintf(buf + len, PAGE_SIZE - len,
+			"cpu=%d ping_start_ns=%llu ping_end_ns=%llu idle=%d\n", cpu,
+			READ_ONCE(wd->ping_start[cpu]), READ_ONCE(wd->ping_end[cpu]),
+			READ_ONCE(wd->cpu_idle_pc_state[cpu]));
+	return len;
+}
+static DEVICE_ATTR_RO(fogos_state);
+
 /**
  * qcom_wdt_remove() - Removes the watchdog and stops it's kthread.
  *
@@ -643,6 +689,8 @@ int qcom_wdt_remove(struct platform_device *pdev)
 		qcom_wdt_disable(wdog_dd);
 
 	mutex_unlock(&wdog_dd->disable_lock);
+	if (fogos_diag)
+		device_remove_file(wdog_dd->dev, &dev_attr_fogos_state);
 	device_remove_file(wdog_dd->dev, &dev_attr_disable);
 	if (wdog_dd->irq_ppi)
 		free_percpu((void __percpu *)wdog_dd->wdog_cpu_dd);
@@ -667,6 +715,12 @@ void qcom_wdt_trigger_bite(void)
 {
 	if (!wdog_data)
 		return;
+	if (fogos_diag) {
+		pr_emerg("fogos-wdt: explicit bite request caller=%pS in_panic=%d ping_cpu=%d last_pet_ns=%llu\n",
+			 (void *)_RET_IP_, READ_ONCE(wdog_data->in_panic),
+			 READ_ONCE(fogos_ping_cpu), READ_ONCE(wdog_data->last_pet));
+		dump_stack();
+	}
 	compute_irq_count();
 	dev_err(wdog_data->dev, "Causing a QCOM Apps Watchdog bite!\n");
 	wdog_data->ops->show_wdt_status(wdog_data);
@@ -724,6 +778,8 @@ static int qcom_wdt_init_sysfs(struct msm_watchdog_data *wdog_dd)
 {
 	int error = 0;
 
+	if (fogos_diag)
+		error |= device_create_file(wdog_dd->dev, &dev_attr_fogos_state);
 	error |= device_create_file(wdog_dd->dev, &dev_attr_disable);
 	error |= device_create_file(wdog_dd->dev, &dev_attr_wakeup_enable);
 	if (QCOM_WATCHDOG_USERSPACE_PET) {
@@ -825,6 +881,8 @@ static int qcom_wdt_init(struct msm_watchdog_data *wdog_dd,
 	wdog_dd->ops->reset_wdt(wdog_dd);
 	wdog_dd->last_pet = sched_clock();
 	wdog_dd->enabled = true;
+	if (fogos_diag)
+		wdog_dd->ops->show_wdt_status(wdog_dd);
 
 	qcom_wdt_init_sysfs(wdog_dd);
 
@@ -854,6 +912,9 @@ static void qcom_wdt_dt_to_pdata(struct platform_device *pdev,
 	pdata->bark_irq = platform_get_irq(pdev, 0);
 	pdata->irq_ppi = irq_is_percpu(pdata->bark_irq);
 	pdata->bark_time = QCOM_WATCHDOG_BARK_TIME;
+	if (fogos_diag)
+		dev_info(&pdev->dev, "fogos-wdt: configured bark=%ums bite=%ums; tracing only\n",
+			 pdata->bark_time, pdata->bark_time + 3000);
 	pdata->pet_time = QCOM_WATCHDOG_PET_TIME;
 	pdata->do_ipi_ping = QCOM_WATCHDOG_IPI_PING;
 	pdata->wakeup_irq_enable = QCOM_WATCHDOG_WAKEUP_ENABLE;

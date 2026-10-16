@@ -19,12 +19,20 @@
 #define WDT0_BITE_TIME          0x14
 #define WDT_HZ                  32765
 
+static bool fogos_diag;
+module_param(fogos_diag, bool, 0400);
+MODULE_PARM_DESC(fogos_diag, "Fogos diagnostic: read-only watchdog register capture");
+
 static inline int qcom_soc_set_wdt_bark(u32 time,
 					struct msm_watchdog_data *wdog_dd)
 {
 	__raw_writel((time * WDT_HZ)/1000, wdog_dd->base + WDT0_BARK_TIME);
 	/* Make sure register write is complete before proceeding */
 	mb();
+	if (fogos_diag)
+		dev_info(wdog_dd->dev, "fogos-wdt-reg: bark requested_ms=%u requested_ticks=%u readback_ticks=%u\n",
+			 time, (time * WDT_HZ) / 1000,
+			 __raw_readl(wdog_dd->base + WDT0_BARK_TIME));
 	return 0;
 }
 
@@ -34,6 +42,10 @@ static inline int qcom_soc_set_wdt_bite(u32 time,
 	__raw_writel((time * WDT_HZ)/1000, wdog_dd->base + WDT0_BITE_TIME);
 	/* Make sure register write is complete before proceeding */
 	mb();
+	if (fogos_diag)
+		dev_info(wdog_dd->dev, "fogos-wdt-reg: bite requested_ms=%u requested_ticks=%u readback_ticks=%u\n",
+			 time, (time * WDT_HZ) / 1000,
+			 __raw_readl(wdog_dd->base + WDT0_BITE_TIME));
 	return 0;
 }
 
@@ -83,10 +95,30 @@ static struct qcom_wdt_ops qcom_soc_wdt_ops = {
 	.show_wdt_status   = qcom_soc_show_wdt_status
 };
 
+/* These registers already have a read-only status path in show_wdt_status.
+ * Do not pet, freeze or change the watchdog while sampling them.
+ */
+static ssize_t fogos_registers_show(struct device *dev,
+				  struct device_attribute *attr, char *buf)
+{
+	struct msm_watchdog_data *wd = dev_get_drvdata(dev);
+	u32 status = __raw_readl(wd->base + WDT0_STS);
+	u32 control = __raw_readl(wd->base + WDT0_EN);
+	u32 bark = __raw_readl(wd->base + WDT0_BARK_TIME);
+	u32 bite = __raw_readl(wd->base + WDT0_BITE_TIME);
+
+	return scnprintf(buf, PAGE_SIZE,
+		"clock_hz=%u status=0x%x control=0x%x bark_ticks=%u bite_ticks=%u bark_ms=%llu bite_ms=%llu\n",
+		WDT_HZ, status, control, bark, bite,
+		(u64)bark * 1000 / WDT_HZ, (u64)bite * 1000 / WDT_HZ);
+}
+static DEVICE_ATTR_RO(fogos_registers);
+
 static int qcom_soc_wdt_probe(struct platform_device *pdev)
 {
 	struct resource *res;
 	struct msm_watchdog_data *wdog_dd;
+	int ret;
 
 	wdog_dd = devm_kzalloc(&pdev->dev, sizeof(*wdog_dd), GFP_KERNEL);
 	if (!wdog_dd)
@@ -103,7 +135,21 @@ static int qcom_soc_wdt_probe(struct platform_device *pdev)
 	}
 	wdog_dd->ops = &qcom_soc_wdt_ops;
 
-	return qcom_wdt_register(pdev, wdog_dd, "msm-watchdog");
+	ret = qcom_wdt_register(pdev, wdog_dd, "msm-watchdog");
+	if (!ret && fogos_diag) {
+		int error = device_create_file(&pdev->dev, &dev_attr_fogos_registers);
+
+		if (error)
+			dev_warn(&pdev->dev, "fogos-wdt-reg: cannot create read-only snapshot: %d\n", error);
+	}
+	return ret;
+}
+
+static int qcom_soc_wdt_remove(struct platform_device *pdev)
+{
+	if (fogos_diag)
+		device_remove_file(&pdev->dev, &dev_attr_fogos_registers);
+	return qcom_wdt_remove(pdev);
 }
 
 static const struct dev_pm_ops qcom_soc_dev_pm_ops = {
@@ -122,7 +168,7 @@ static const struct of_device_id qcom_soc_match_table[] = {
 
 static struct platform_driver qcom_soc_wdt_driver = {
 	.probe = qcom_soc_wdt_probe,
-	.remove = qcom_wdt_remove,
+	.remove = qcom_soc_wdt_remove,
 	.driver = {
 		.name = "msm_watchdog",
 		.pm = &qcom_soc_dev_pm_ops,
