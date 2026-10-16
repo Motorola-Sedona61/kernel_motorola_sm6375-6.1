@@ -12,6 +12,7 @@
 #include <linux/of_address.h>
 #include <linux/platform_device.h>
 #include <linux/module.h>
+#include <linux/mutex.h>
 #include <linux/reboot.h>
 #include <linux/pm.h>
 #include <linux/panic_notifier.h>
@@ -36,6 +37,7 @@ struct qcom_dload {
 	struct kobject kobj;
 
 	bool in_panic;
+	bool usb_only;
 	void __iomem *dload_dest_addr;
 };
 
@@ -51,6 +53,7 @@ static bool enable_dump =
 	IS_ENABLED(CONFIG_POWER_RESET_QCOM_DOWNLOAD_MODE_DEFAULT);
 static enum qcom_download_mode current_download_mode = QCOM_DOWNLOAD_NODUMP;
 static enum qcom_download_mode dump_mode = QCOM_DOWNLOAD_BOTHDUMP;
+static DEFINE_MUTEX(dump_mode_lock);
 
 static int set_download_mode(enum qcom_download_mode mode)
 {
@@ -71,13 +74,19 @@ static int set_dump_mode(enum qcom_download_mode mode)
 
 	if (enable_dump) {
 		ret = set_download_mode(mode);
-		if (likely(!ret))
-			dump_mode = qcom_scm_get_download_mode(&temp, 0) ? dump_mode : temp;
+		if (ret)
+			return ret;
+		ret = qcom_scm_get_download_mode(&temp, 0);
+		if (ret)
+			return ret;
+		dump_mode = temp;
 	} else
 		dump_mode = mode;
 
-	if (dump_mode != mode)
+	if (dump_mode != mode) {
 		pr_err("Requested dload mode is not set\n");
+		return -EIO;
+	}
 
 	return ret;
 }
@@ -201,10 +210,17 @@ static ssize_t emmc_dload_store(struct kobject *kobj,
 	if (ret < 0)
 		return ret;
 
+	mutex_lock(&dump_mode_lock);
+	if (enabled && poweroff->usb_only) {
+		mutex_unlock(&dump_mode_lock);
+		pr_warn("Internal-storage dump request rejected: USB-only latch set\n");
+		return -EPERM;
+	}
 	if (enabled)
 		set_download_dest(poweroff, QCOM_DOWNLOAD_DEST_EMMC);
 	else
 		set_download_dest(poweroff, QCOM_DOWNLOAD_DEST_QPST);
+	mutex_unlock(&dump_mode_lock);
 
 	return count;
 }
@@ -237,6 +253,7 @@ static ssize_t dload_mode_store(struct kobject *kobj,
 				const char *buf, size_t count)
 {
 	enum qcom_download_mode mode;
+	int ret;
 
 	if (sysfs_streq(buf, "full"))
 		mode = QCOM_DOWNLOAD_FULLDUMP;
@@ -250,13 +267,60 @@ static ssize_t dload_mode_store(struct kobject *kobj,
 		return -EINVAL;
 	}
 
-	return set_dump_mode(mode) ? : count;
+	mutex_lock(&dump_mode_lock);
+	ret = set_dump_mode(mode);
+	mutex_unlock(&dump_mode_lock);
+	return ret ? : count;
 }
 static struct reset_attribute attr_dload_mode = __ATTR_RW(dload_mode);
+
+/* Explicit normal-boot diagnostic opt-in. Recovery never writes this node.
+ * Latch USB before requesting mini so later persistent-property actions cannot
+ * redirect a crash dump to internal storage (UFS also uses emmc_dload's name).
+ */
+static ssize_t usb_minidump_show(struct kobject *kobj,
+			       struct attribute *attr, char *buf)
+{
+	struct qcom_dload *poweroff = to_qcom_dload(kobj);
+
+	return scnprintf(buf, PAGE_SIZE, "%u\n", READ_ONCE(poweroff->usb_only));
+}
+
+static ssize_t usb_minidump_store(struct kobject *kobj,
+				struct attribute *attr,
+				const char *buf, size_t count)
+{
+	struct qcom_dload *poweroff = to_qcom_dload(kobj);
+	bool enabled;
+	int ret;
+
+	ret = kstrtobool(buf, &enabled);
+	if (ret)
+		return ret;
+	if (!enabled || !enable_dump)
+		return -EINVAL;
+	if (!poweroff->dload_dest_addr)
+		return -ENODEV;
+
+	mutex_lock(&dump_mode_lock);
+	WRITE_ONCE(poweroff->usb_only, true);
+	set_download_dest(poweroff, QCOM_DOWNLOAD_DEST_QPST);
+	/* Keep the USB-only latch even if arming fails. */
+	if (get_download_dest(poweroff) != QCOM_DOWNLOAD_DEST_QPST)
+		ret = -EIO;
+	else
+		ret = set_dump_mode(QCOM_DOWNLOAD_MINIDUMP);
+	mutex_unlock(&dump_mode_lock);
+	pr_info("USB-only minidump request: result=%d mode=0x%x\n", ret, dump_mode);
+	return ret ? : count;
+}
+static struct reset_attribute attr_usb_minidump = __ATTR(usb_minidump, 0600,
+					usb_minidump_show, usb_minidump_store);
 
 static struct attribute *qcom_dload_attrs[] = {
 	&attr_emmc_dload.attr,
 	&attr_dload_mode.attr,
+	&attr_usb_minidump.attr,
 	NULL
 };
 static struct attribute_group qcom_dload_attr_group = {
