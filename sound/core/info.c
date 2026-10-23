@@ -70,6 +70,37 @@ EXPORT_SYMBOL(snd_seq_root);
 struct snd_info_entry *snd_oss_root;
 #endif
 
+#ifdef CONFIG_AUDIO_QGKI
+static ssize_t snd_info_card_state_read(struct snd_info_entry *entry,
+		void *private_data, struct file *file, char __user *buf,
+		size_t count, loff_t pos)
+{
+	struct snd_card *card = entry->private_data;
+	char state[16];
+	int len;
+
+	len = scnprintf(state, sizeof(state), "%s\n",
+			READ_ONCE(card->offline) ? "OFFLINE" : "ONLINE");
+	return simple_read_from_buffer(buf, count, &pos, state, len);
+}
+
+static __poll_t snd_info_card_state_poll(struct snd_info_entry *entry,
+		void *private_data, struct file *file, poll_table *wait)
+{
+	struct snd_card *card = entry->private_data;
+
+	poll_wait(file, &card->offline_poll_wait, wait);
+	if (xchg(&card->offline_change, 0))
+		return EPOLLIN | EPOLLPRI | EPOLLRDNORM;
+	return 0;
+}
+
+static const struct snd_info_entry_ops snd_info_card_state_ops = {
+	.read = snd_info_card_state_read,
+	.poll = snd_info_card_state_poll,
+};
+#endif
+
 static int alloc_info_private(struct snd_info_entry *entry,
 			      struct snd_info_private_data **ret)
 {
@@ -512,6 +543,16 @@ int snd_info_card_create(struct snd_card *card)
 		return -ENOMEM;
 	card->proc_root = entry;
 
+#ifdef CONFIG_AUDIO_QGKI
+	entry = snd_info_create_card_entry(card, "state", card->proc_root);
+	if (!entry)
+		return -ENOMEM;
+	entry->size = 16;
+	entry->content = SNDRV_INFO_CONTENT_DATA;
+	entry->c.ops = &snd_info_card_state_ops;
+	entry->private_data = card;
+#endif
+
 	return snd_card_ro_proc_new(card, "id", card, snd_card_id_read);
 }
 
@@ -541,6 +582,8 @@ int snd_info_card_register(struct snd_card *card)
 	if (!p)
 		return -ENOMEM;
 	card->proc_root_link = p;
+
+
 	return 0;
 }
 

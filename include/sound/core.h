@@ -153,6 +153,11 @@ struct snd_card {
 
 	ANDROID_KABI_RESERVE(1);
 	ANDROID_KABI_RESERVE(2);
+#ifdef CONFIG_AUDIO_QGKI
+	int offline;
+	unsigned long offline_change;
+	wait_queue_head_t offline_poll_wait;
+#endif
 };
 
 #define dev_to_snd_card(p)	container_of(p, struct snd_card, card_dev)
@@ -524,5 +529,10 @@ int snd_fasync_helper(int fd, struct file *file, int on,
 		      struct snd_fasync **fasyncp);
 void snd_kill_fasync(struct snd_fasync *fasync, int signal, int poll);
 void snd_fasync_free(struct snd_fasync *fasync);
+
+#ifdef CONFIG_AUDIO_QGKI
+void snd_card_change_online_state(struct snd_card *card, int online);
+bool snd_card_is_online_state(struct snd_card *card);
+#endif
 
 #endif /* __SOUND_CORE_H */

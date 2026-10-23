@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: GPL-2.0-only
+config FOGOS_LEGACY_AUDIO
+	bool "Fogos legacy APR/Q6 audio techpack"
+	depends on ARCH_QCOM && SND_SOC
+	help
+	  Build the Motorola fogos APR/Q6 audio stack. The vendor Holi build
+	  configuration selects its modules independently of upstream audio.
+	  Do not combine this with a GPR/SPF vendor audio stack.
+
+config AUDIO_QGKI
+	bool
+	default y if FOGOS_LEGACY_AUDIO
+	help
+	  Retain the stock fogos QGKI compress and routing behavior.

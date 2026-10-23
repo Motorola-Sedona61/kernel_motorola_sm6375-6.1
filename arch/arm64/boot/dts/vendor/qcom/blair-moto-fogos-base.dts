@@ -13,8 +13,7 @@
 /dts-v1/;
 
 #include "blair.dtsi"
-#include "fogos-gpu.dtsi"
-#include "audio/blair-audio.dtsi"
+#include "holi-audio.dtsi"
 #include "display/blair-sde.dtsi"
 #include "camera/blair-camera.dtsi"
 

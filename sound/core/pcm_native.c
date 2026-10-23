@@ -1425,6 +1425,9 @@ static int snd_pcm_pre_start(struct snd_pcm_substream *substream,
 	if (runtime->state != SNDRV_PCM_STATE_PREPARED)
 		return -EBADFD;
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK &&
+	    #ifdef CONFIG_FOGOS_LEGACY_AUDIO
+	    !substream->hw_no_buffer &&
+#endif
 	    !snd_pcm_playback_data(substream))
 		return -EPIPE;
 	runtime->trigger_tstamp_latched = false;
@@ -3401,6 +3404,11 @@ static int snd_pcm_common_ioctl(struct file *file,
 	case SNDRV_PCM_IOCTL_FORWARD:
 		return snd_pcm_forward_ioctl(substream, arg);
 	}
+#ifdef CONFIG_FOGOS_LEGACY_AUDIO
+	if (_IOC_TYPE(cmd) == 'U' && substream->ops->ioctl)
+		return substream->ops->ioctl(substream, cmd, arg);
+#endif
+
 	pcm_dbg(substream->pcm, "unknown ioctl = 0x%x\n", cmd);
 	return -ENOTTY;
 }
@@ -3412,7 +3420,8 @@ static long snd_pcm_ioctl(struct file *file, unsigned int cmd,
 
 	pcm_file = file->private_data;
 
-	if (((cmd >> 8) & 0xff) != 'A')
+	if (((cmd >> 8) & 0xff) != 'A' &&
+	    !(IS_ENABLED(CONFIG_FOGOS_LEGACY_AUDIO) && _IOC_TYPE(cmd) == 'U'))
 		return -ENOTTY;
 
 	return snd_pcm_common_ioctl(file, pcm_file->substream, cmd,

@@ -628,6 +628,9 @@ struct snd_soc_pcm_stream {
 	unsigned int channels_min;	/* min channels */
 	unsigned int channels_max;	/* max channels */
 	unsigned int sig_bits;		/* number of bits of content */
+#ifdef CONFIG_FOGOS_LEGACY_AUDIO
+	const char *aif_name; /* Fogos APR DAPM route endpoint */
+#endif
 };
 
 /* SoC audio ops */
@@ -656,6 +659,10 @@ struct snd_soc_dai_link_component {
 	struct device_node *of_node;
 	const char *dai_name;
 };
+
+#ifdef CONFIG_FOGOS_LEGACY_AUDIO
+#define SND_SOC_DAI_LINK_NO_HOST 1
+#endif
 
 struct snd_soc_dai_link {
 	/* config - must be set by machine driver */
@@ -765,6 +772,10 @@ struct snd_soc_dai_link {
 #endif
 
 	ANDROID_KABI_RESERVE(1);
+#ifdef CONFIG_FOGOS_LEGACY_AUDIO
+	unsigned int no_host_mode:2;
+	unsigned int dynamic_be:1;
+#endif
 };
 
 static inline struct snd_soc_dai_link_component*
@@ -1496,5 +1507,9 @@ static inline void _snd_soc_dpcm_mutex_assert_held_r(struct snd_soc_pcm_runtime 
 #include <sound/soc-component.h>
 #include <sound/soc-card.h>
 #include <sound/soc-jack.h>
+
+#ifdef CONFIG_AUDIO_QGKI
+void snd_soc_card_change_online_state(struct snd_soc_card *card, int online);
+#endif
 
 #endif

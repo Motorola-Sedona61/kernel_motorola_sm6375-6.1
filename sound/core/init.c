@@ -327,6 +327,9 @@ static int snd_card_init(struct snd_card *card, struct device *parent,
 	atomic_set(&card->power_ref, 0);
 #endif
 	init_waitqueue_head(&card->remove_sleep);
+#ifdef CONFIG_AUDIO_QGKI
+	init_waitqueue_head(&card->offline_poll_wait);
+#endif
 	card->sync_irq = -1;
 
 	device_initialize(&card->card_dev);
@@ -1196,3 +1199,21 @@ int snd_power_wait(struct snd_card *card)
 }
 EXPORT_SYMBOL(snd_power_wait);
 #endif /* CONFIG_PM */
+
+#ifdef CONFIG_AUDIO_QGKI
+void snd_card_change_online_state(struct snd_card *card, int online)
+{
+	WRITE_ONCE(card->offline, !online);
+	/* Publish the state before waking the stock audio HAL poller. */
+	smp_wmb();
+	xchg(&card->offline_change, 1);
+	wake_up_interruptible(&card->offline_poll_wait);
+}
+EXPORT_SYMBOL(snd_card_change_online_state);
+
+bool snd_card_is_online_state(struct snd_card *card)
+{
+	return !READ_ONCE(card->offline);
+}
+EXPORT_SYMBOL(snd_card_is_online_state);
+#endif
