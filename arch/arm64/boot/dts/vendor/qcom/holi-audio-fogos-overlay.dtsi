@@ -248,7 +248,8 @@
 
 &holi_snd {
 	qcom,model = "holi-9370_fs1815-snd-card";
-	qcom,wcn-btfm = <1>;
+	/* No 6.1 bt_fm_slim (btfmslim_slave) codec yet; its links defer the card. */
+	qcom,wcn-btfm = <0>;
 	qcom,tdm-max-slots = <4>;
 	qcom,mi2s-audio-intf = <0>;
 	qcom,wsa-max-devs = <0>;
@@ -390,4 +391,7 @@
 	nvmem-cell-names = "adsp_variant";
 	adsp-fw-names = "adsp2";
 	adsp-fw-bit-values = <0x1>;
+	/* The fogos modem partition only ships adsp.mdt; never select adsp2. */
+	adsp-fuse-not-supported = <1>;
+	adsp-fw-name = "adsp.mdt";
 };
