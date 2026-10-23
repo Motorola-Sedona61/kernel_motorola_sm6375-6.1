@@ -2330,6 +2330,8 @@ static int msm_soc_component_pcm_construct(struct snd_soc_component *component,
 }
 
 static struct snd_soc_component_driver msm_soc_component = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name		= DRV_NAME,
 	.open = msm_soc_component_open,
 	.close = msm_soc_component_close,

@@ -43952,6 +43952,8 @@ static void msm_soc_routing_component_pcm_destruct(struct snd_soc_component *com
 }
 
 static struct snd_soc_component_driver msm_soc_routing_component = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name		= DRV_NAME,
 	.hw_params = msm_soc_routing_component_hw_params,
 	.close = msm_soc_routing_component_close,

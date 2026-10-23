@@ -410,6 +410,8 @@ static void msm_dai_slim_shutdown(struct snd_pcm_substream *stream,
 }
 
 static const struct snd_soc_component_driver msm_dai_slim_component = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name		= "msm-dai-slim-cmpnt",
 };
 

@@ -35,6 +35,8 @@ static int msm_soc_hostless_component_prepare(struct snd_soc_component *componen
 }
 
 static struct snd_soc_component_driver msm_soc_hostless_component = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name		= DRV_NAME,
 	.prepare = msm_soc_hostless_component_prepare,
 };

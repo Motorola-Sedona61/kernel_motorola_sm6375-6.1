@@ -79,6 +79,8 @@ static struct snd_soc_dai_ops msm_fe_Multimedia_dai_ops = {
 };
 
 static const struct snd_soc_component_driver msm_fe_dai_component = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name		= "msm-dai-fe",
 };
 

@@ -222,6 +222,8 @@ static struct snd_soc_dai_driver msm_dai_stub_host_playback_rx_dai[] = {
 };
 
 static const struct snd_soc_component_driver msm_dai_stub_component = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name		= "msm-dai-stub-dev",
 };
 

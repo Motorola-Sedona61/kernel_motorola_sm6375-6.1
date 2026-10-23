@@ -5786,6 +5786,8 @@ static const struct snd_compress_ops msm_compr_ops = {
 };
 
 static struct snd_soc_component_driver msm_soc_component = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name		= DRV_NAME,
 	.probe		= msm_compr_probe,
 	.compress_ops	= &msm_compr_ops,

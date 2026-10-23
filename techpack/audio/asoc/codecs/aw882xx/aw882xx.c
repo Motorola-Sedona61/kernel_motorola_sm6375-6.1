@@ -1718,6 +1718,8 @@ static int aw882xx_codec_write(struct snd_soc_component *component,
 }
 
 static struct snd_soc_component_driver soc_component_dev_aw882xx = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.probe = aw882xx_probe,
 	.remove = aw882xx_remove,
 	.read = aw882xx_codec_read,

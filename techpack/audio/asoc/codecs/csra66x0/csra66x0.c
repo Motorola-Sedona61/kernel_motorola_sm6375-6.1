@@ -941,6 +941,8 @@ static void csra66x0_soc_remove(struct snd_soc_component *component)
 }
 
 static const struct snd_soc_component_driver soc_codec_drv_csra66x0 = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name = DRV_NAME,
 	.probe  = csra66x0_soc_probe,
 	.remove = csra66x0_soc_remove,

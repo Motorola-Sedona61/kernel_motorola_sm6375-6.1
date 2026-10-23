@@ -1447,6 +1447,8 @@ static int wsa883x_soc_codec_resume(struct snd_soc_component *component)
 }
 
 static const struct snd_soc_component_driver soc_codec_dev_wsa883x_wsa = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name = "",
 	.probe = wsa883x_codec_probe,
 	.remove = wsa883x_codec_remove,

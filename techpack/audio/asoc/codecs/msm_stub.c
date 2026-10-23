@@ -38,6 +38,8 @@ static struct snd_soc_dai_driver msm_stub_dais[] = {
 };
 
 static const struct snd_soc_component_driver soc_msm_stub = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name = DRV_NAME,
 };
 

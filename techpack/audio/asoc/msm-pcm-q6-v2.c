@@ -3905,6 +3905,8 @@ static snd_pcm_sframes_t msm_pcm_cached_delay(struct snd_soc_component *componen
 #endif
 
 static struct snd_soc_component_driver msm_soc_component = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name		= DRV_NAME,
 	.open = msm_soc_component_open,
 	.copy_user = msm_soc_component_copy_user,

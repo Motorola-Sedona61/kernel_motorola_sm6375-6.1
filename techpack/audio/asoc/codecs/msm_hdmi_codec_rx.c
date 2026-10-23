@@ -862,6 +862,8 @@ static struct snd_soc_dai_driver msm_ext_disp_audio_codec_rx_dais[] = {
 };
 
 static const struct snd_soc_component_driver msm_ext_disp_codec_rx_driver = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name = DRV_NAME,
 	.probe = msm_ext_disp_audio_codec_rx_probe,
 	.remove =  msm_ext_disp_audio_codec_rx_remove,

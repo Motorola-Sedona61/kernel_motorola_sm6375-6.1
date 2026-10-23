@@ -10708,6 +10708,8 @@ static void tavil_soc_codec_remove(struct snd_soc_component *component)
 }
 
 static const struct snd_soc_component_driver soc_codec_dev_tavil = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name = DRV_NAME,
 	.probe = tavil_soc_codec_probe,
 	.remove = tavil_soc_codec_remove,

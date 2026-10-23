@@ -3994,6 +3994,8 @@ static int wcd938x_soc_codec_resume(struct snd_soc_component *component)
 }
 
 static struct snd_soc_component_driver soc_codec_dev_wcd938x = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name = WCD938X_DRV_NAME,
 	.probe = wcd938x_soc_codec_probe,
 	.remove = wcd938x_soc_codec_remove,

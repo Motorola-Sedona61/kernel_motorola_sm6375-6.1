@@ -1913,6 +1913,8 @@ static struct snd_soc_dai_ops msm_dai_q6_auxpcm_ops = {
 
 static const struct snd_soc_component_driver
 	msm_dai_q6_aux_pcm_dai_component = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name		= "msm-auxpcm-dev",
 };
 
@@ -2717,6 +2719,8 @@ static struct snd_soc_dai_driver msm_dai_q6_spdif_spdif_tx_dai[] = {
 };
 
 static const struct snd_soc_component_driver msm_dai_spdif_q6_component = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name		= "msm-dai-q6-spdif",
 };
 
@@ -7139,6 +7143,8 @@ rtn:
 }
 
 static const struct snd_soc_component_driver msm_q6_mi2s_dai_component = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name		= "msm-dai-q6-mi2s",
 };
 static int msm_dai_q6_mi2s_dev_probe(struct platform_device *pdev)
@@ -7751,6 +7757,8 @@ rtn:
 }
 
 static const struct snd_soc_component_driver msm_q6_meta_mi2s_dai_component = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name		= "msm-dai-q6-meta-mi2s",
 };
 
@@ -7889,6 +7897,8 @@ static int msm_dai_q6_meta_mi2s_dev_remove(struct platform_device *pdev)
 }
 
 static const struct snd_soc_component_driver msm_dai_q6_component = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name		= "msm-dai-q6-dev",
 };
 
@@ -15208,6 +15218,8 @@ static struct snd_soc_dai_driver msm_dai_q6_tdm_dai[] = {
 };
 
 static const struct snd_soc_component_driver msm_q6_tdm_dai_component = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name		= "msm-dai-q6-tdm",
 };
 
@@ -16331,6 +16343,8 @@ static struct snd_soc_dai_driver msm_dai_q6_cdc_dma_dai[] = {
 };
 
 static const struct snd_soc_component_driver msm_q6_cdc_dma_dai_component = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name = "msm-dai-cdc-dma-dev",
 };
 

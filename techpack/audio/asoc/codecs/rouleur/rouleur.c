@@ -2309,6 +2309,8 @@ static int rouleur_soc_codec_resume(struct snd_soc_component *component)
 }
 
 static const struct snd_soc_component_driver soc_codec_dev_rouleur = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name = ROULEUR_DRV_NAME,
 	.probe = rouleur_soc_codec_probe,
 	.remove = rouleur_soc_codec_remove,

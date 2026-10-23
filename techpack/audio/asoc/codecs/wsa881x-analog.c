@@ -1274,6 +1274,8 @@ static void wsa881x_remove(struct snd_soc_component *component)
 }
 
 static const struct snd_soc_component_driver soc_codec_dev_wsa881x = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name = "",
 	.probe	= wsa881x_probe,
 	.remove	= wsa881x_remove,

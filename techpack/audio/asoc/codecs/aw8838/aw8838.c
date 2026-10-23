@@ -1004,6 +1004,8 @@ static int aw8838_codec_write(aw_snd_soc_codec_t *codec,unsigned int reg,unsigne
 
 #ifdef AW_KERNEL_VER_OVER_4_19_1
 static struct snd_soc_component_driver soc_codec_dev_aw8838 = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.probe = aw8838_probe,
 	.remove = aw8838_remove,
 	.read = aw8838_codec_read,

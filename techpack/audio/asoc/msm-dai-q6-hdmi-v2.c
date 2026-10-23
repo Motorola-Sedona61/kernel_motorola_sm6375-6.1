@@ -631,6 +631,8 @@ static struct snd_soc_dai_driver msm_dai_q6_display_port_rx_dai[] = {
 };
 
 static const struct snd_soc_component_driver msm_dai_hdmi_q6_component = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name		= "msm-dai-q6-hdmi",
 };
 

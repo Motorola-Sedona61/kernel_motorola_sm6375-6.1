@@ -419,6 +419,8 @@ static void haptics_comp_remove(struct snd_soc_component *component)
 }
 
 static const struct snd_soc_component_driver swr_haptics_component = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name = "swr-haptics",
 	.probe = haptics_comp_probe,
 	.remove = haptics_comp_remove,

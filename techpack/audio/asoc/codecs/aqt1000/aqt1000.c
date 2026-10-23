@@ -3586,6 +3586,8 @@ static void aqt_soc_codec_remove(struct snd_soc_component *component)
 }
 
 static const struct snd_soc_component_driver snd_cdc_dev_aqt = {
+	/* Linux 6.1: keep the 5.4 default single-DAI naming */
+	.legacy_dai_naming = 1,
 	.name = DRV_NAME,
 	.probe = aqt_soc_codec_probe,
 	.remove = aqt_soc_codec_remove,
