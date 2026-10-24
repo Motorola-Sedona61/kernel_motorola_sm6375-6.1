@@ -1605,9 +1605,9 @@ static const struct msm_pingroup blair_groups[] = {
 	[163] = SDC_QDSD_PINGROUP(sdc2_data, 0x1a2000, 9, 0),
 };
 
-#ifdef CONFIG_PINCTRL_MALMO
+#if IS_ENABLED(CONFIG_PINCTRL_MALMO) || IS_ENABLED(CONFIG_FOGOS_DTB)
 /*
-48 for audioPA
+48 for audioPA (malmo) / NFC VEN (fogos)
 17 for FPS
 */
 static const int blair_reserved_gpios[] = {
