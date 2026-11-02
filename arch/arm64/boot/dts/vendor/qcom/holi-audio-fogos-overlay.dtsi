@@ -248,8 +248,8 @@
 
 &holi_snd {
 	qcom,model = "holi-9370_fs1815-snd-card";
-	/* No 6.1 bt_fm_slim (btfmslim_slave) codec yet; its links defer the card. */
-	qcom,wcn-btfm = <0>;
+	/* As on stock: SLIMBUS_7/8 links to the bt_fm_slim codec (btfmslim_slave). */
+	qcom,wcn-btfm = <1>;
 	qcom,tdm-max-slots = <4>;
 	qcom,mi2s-audio-intf = <0>;
 	qcom,wsa-max-devs = <0>;
