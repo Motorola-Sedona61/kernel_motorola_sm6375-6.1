@@ -247,7 +247,7 @@ static int pm8941_pwrkey_sw_debounce_init(struct pm8941_pwrkey *pwrkey)
 
 static int pm8941_pwrkey_hw_init(struct pm8941_pwrkey *pwrkey)
 {
-	u32 req_delay = 0, mask, delay_shift;
+	u32 req_delay = pwrkey->req_delay, mask, delay_shift;
 	int error;
 
 	if (pwrkey->data->supports_debounce_config) {
