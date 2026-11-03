@@ -456,8 +456,9 @@ static int qcom_glink_tx(struct qcom_glink *glink,
 	unsigned long flags;
 	int ret = 0;
 
-	/* Reject packets that are too big */
-	if (tlen >= glink->tx_pipe->length)
+	/* Reject packets that cannot fit even in an otherwise empty FIFO. */
+	if (glink->tx_pipe->length <= GLINK_TX_FIFO_RESERVE ||
+	    tlen > glink->tx_pipe->length - GLINK_TX_FIFO_RESERVE)
 		return -EINVAL;
 
 	if (atomic_read(&glink->in_reset))
@@ -1337,7 +1338,7 @@ advance_rx:
 	return 0;
 }
 
-static void qcom_glink_handle_intent(struct qcom_glink *glink,
+static int qcom_glink_handle_intent(struct qcom_glink *glink,
 				     unsigned int cid,
 				     unsigned int count,
 				     size_t avail)
@@ -1361,7 +1362,7 @@ static void qcom_glink_handle_intent(struct qcom_glink *glink,
 
 	if (avail < msglen) {
 		dev_dbg(glink->dev, "Not enough data in fifo\n");
-		return;
+		return -EAGAIN;
 	}
 
 	spin_lock_irqsave(&glink->idr_lock, flags);
@@ -1370,12 +1371,12 @@ static void qcom_glink_handle_intent(struct qcom_glink *glink,
 	if (!channel) {
 		dev_err(glink->dev, "intents for non-existing channel\n");
 		qcom_glink_rx_advance(glink, ALIGN(msglen, 8));
-		return;
+		return 0;
 	}
 
 	msg = kmalloc(msglen, GFP_ATOMIC);
 	if (!msg)
-		return;
+		return -ENOMEM;
 
 	qcom_glink_rx_peak(glink, msg, 0, msglen);
 
@@ -1404,6 +1405,7 @@ static void qcom_glink_handle_intent(struct qcom_glink *glink,
 
 	kfree(msg);
 	qcom_glink_rx_advance(glink, ALIGN(msglen, 8));
+	return 0;
 }
 
 static int qcom_glink_rx_open_ack(struct qcom_glink *glink, unsigned int lcid)
@@ -1566,7 +1568,7 @@ static int qcom_glink_native_rx(struct qcom_glink *glink, int iterations)
 			mbox_client_txdone(glink->mbox_chan, 0);
 			break;
 		case GLINK_CMD_INTENT:
-			qcom_glink_handle_intent(glink, param1, param2, avail);
+			ret = qcom_glink_handle_intent(glink, param1, param2, avail);
 			break;
 		case GLINK_CMD_RX_DONE:
 			qcom_glink_handle_rx_done(glink, param1, param2, false);
@@ -1598,6 +1600,10 @@ static int qcom_glink_native_rx(struct qcom_glink *glink, int iterations)
 	glink->irq_running = false;
 	spin_unlock_irqrestore(&glink->irq_lock, flags);
 
+	/* Stop retrying incomplete or invalid commands without progress. */
+	if (ret)
+		return ret;
+
 	return qcom_glink_rx_avail(glink);
 }
 
@@ -1608,7 +1614,7 @@ static irqreturn_t qcom_glink_native_intr(int irq, void *data)
 
 	ret = qcom_glink_native_rx(glink, 10);
 
-	return (ret) ? IRQ_WAKE_THREAD : IRQ_HANDLED;
+	return ret > 0 ? IRQ_WAKE_THREAD : IRQ_HANDLED;
 }
 
 static irqreturn_t qcom_glink_native_thread_intr(int irq, void *data)
@@ -1787,6 +1793,10 @@ static int qcom_glink_announce_create(struct rpmsg_device *rpdev)
 	while (num_groups--) {
 		size = be32_to_cpup(val++);
 		num_intents = be32_to_cpup(val++);
+		/* Zero-sized intents require the negotiated zero-copy protocol. */
+		if (!size && !(glink->features & GLINK_FEATURE_ZERO_COPY))
+			continue;
+
 		while (num_intents--) {
 			intent = qcom_glink_alloc_intent(glink, channel, size,
 							 true);

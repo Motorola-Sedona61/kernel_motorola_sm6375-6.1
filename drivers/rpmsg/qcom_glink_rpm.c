@@ -112,14 +112,20 @@ static size_t glink_rpm_tx_avail(struct qcom_glink_pipe *glink_pipe)
 	struct glink_rpm_pipe *pipe = to_rpm_pipe(glink_pipe);
 	unsigned int head;
 	unsigned int tail;
+	unsigned int avail;
 
 	head = readl(pipe->head);
 	tail = readl(pipe->tail);
 
 	if (tail <= head)
-		return pipe->native.length - head + tail;
+		avail = pipe->native.length - head + tail;
 	else
-		return tail - head;
+		avail = tail - head;
+
+	if (avail < GLINK_TX_FIFO_RESERVE)
+		return 0;
+
+	return avail - GLINK_TX_FIFO_RESERVE;
 }
 
 static unsigned int glink_rpm_tx_write_one(struct glink_rpm_pipe *pipe,

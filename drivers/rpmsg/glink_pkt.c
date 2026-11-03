@@ -182,24 +182,28 @@ static void glink_pkt_kfree_skb(struct glink_pkt_device *gpdev, struct sk_buff *
 
 static void glink_pkt_clear_queues(struct glink_pkt_device *gpdev)
 {
+	struct sk_buff_head detached;
 	struct sk_buff *skb;
 	unsigned long flags;
 
+	skb_queue_head_init(&detached);
 	mutex_lock(&gpdev->rskb_read_lock);
 	spin_lock_irqsave(&gpdev->queue_lock, flags);
 	if (gpdev->rskb) {
-		glink_pkt_kfree_skb(gpdev, gpdev->rskb);
+		__skb_queue_tail(&detached, gpdev->rskb);
 		gpdev->rskb = NULL;
 		gpdev->rdata = NULL;
 		gpdev->rdata_len = 0;
 	}
 
-	while ((skb = skb_dequeue(&gpdev->queue)))
-		glink_pkt_kfree_skb(gpdev, skb);
-	while ((skb = skb_dequeue(&gpdev->pending)))
+	skb_queue_splice_tail_init(&gpdev->queue, &detached);
+	skb_queue_splice_tail_init(&gpdev->pending, &detached);
+	spin_unlock_irqrestore(&gpdev->queue_lock, flags);
+
+	/* Returning a deferred buffer can wait for room in the GLINK TX FIFO. */
+	while ((skb = __skb_dequeue(&detached)))
 		glink_pkt_kfree_skb(gpdev, skb);
 
-	spin_unlock_irqrestore(&gpdev->queue_lock, flags);
 	mutex_unlock(&gpdev->rskb_read_lock);
 }
 
@@ -209,6 +213,9 @@ static int glink_pkt_rpdev_no_copy_cb(struct rpmsg_device *rpdev, void *buf,
 	struct glink_pkt_device *gpdev = dev_get_drvdata(&rpdev->dev);
 	unsigned long flags;
 	struct sk_buff *skb;
+
+	if (!gpdev)
+		return -ENETRESET;
 
 	GLINK_PKT_INFO("Data received on:%s len:%d\n", gpdev->ch_name, len);
 
@@ -273,7 +280,12 @@ static int glink_pkt_rpdev_cb(struct rpmsg_device *rpdev, void *buf, int len,
 			      void *priv, u32 addr)
 {
 	struct glink_pkt_device *gpdev = dev_get_drvdata(&rpdev->dev);
-	rpmsg_rx_cb_t cb = (gpdev->rx_done) ? glink_pkt_rpdev_no_copy_cb : glink_pkt_rpdev_copy_cb;
+	rpmsg_rx_cb_t cb;
+
+	if (!gpdev)
+		return -ENETRESET;
+
+	cb = gpdev->rx_done ? glink_pkt_rpdev_no_copy_cb : glink_pkt_rpdev_copy_cb;
 
 	return cb(rpdev, buf, len, priv, addr);
 }

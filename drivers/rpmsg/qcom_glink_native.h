@@ -14,6 +14,8 @@
 #define GLINK_FEATURE_ZERO_COPY		BIT(3)
 #define GLINK_FEATURE_ZERO_COPY_POOLS	BIT(4)
 
+/* One ring slot distinguishes full from empty; another holds READ_NOTIF. */
+#define GLINK_TX_FIFO_RESERVE		16
 
 /**
  * rpmsg rx callback return definitions
