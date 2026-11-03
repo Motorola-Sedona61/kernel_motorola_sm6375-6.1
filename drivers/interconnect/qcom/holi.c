@@ -1704,25 +1704,24 @@ static int qnoc_probe(struct platform_device *pdev)
 		qp->util_factor = DEFAULT_UTIL_FACTOR;
 
 	qp->regmap = qcom_icc_map(pdev, desc);
-	if (IS_ERR(qp->regmap))
-		return PTR_ERR(qp->regmap);
-
-	ret = icc_provider_add(provider);
-	if (ret) {
-		dev_err(dev, "error adding interconnect provider: %d\n", ret);
-		clk_bulk_disable_unprepare(qp->num_clks, qp->bus_clks);
-		return ret;
+	if (IS_ERR(qp->regmap)) {
+		ret = PTR_ERR(qp->regmap);
+		goto err_bus_clks;
 	}
 
+	/* Publish only after clocks and node translations are ready. */
+	icc_provider_init(provider);
+
 	qp->num_qos_clks = devm_clk_bulk_get_all(dev, &qp->qos_clks);
-	if (qp->num_qos_clks < 0)
-		return qp->num_qos_clks;
+	if (qp->num_qos_clks < 0) {
+		ret = qp->num_qos_clks;
+		goto err_bus_clks;
+	}
 
 	ret = clk_bulk_prepare_enable(qp->num_qos_clks, qp->qos_clks);
 	if (ret) {
-		clk_bulk_disable_unprepare(qp->num_clks, qp->bus_clks);
 		dev_err(&pdev->dev, "failed to enable QoS clocks\n");
-		return ret;
+		goto err_bus_clks;
 	}
 
 	for (i = 0; i < num_nodes; i++) {
@@ -1746,12 +1745,19 @@ static int qnoc_probe(struct platform_device *pdev)
 		node->data = qnodes[i];
 		icc_node_add(node, provider);
 
-		for (j = 0; j < qnodes[i]->num_links; j++)
-			icc_link_create(node, qnodes[i]->links[j]);
+		for (j = 0; j < qnodes[i]->num_links; j++) {
+			ret = icc_link_create(node, qnodes[i]->links[j]);
+			if (ret)
+				goto err;
+		}
 
 		data->nodes[i] = node;
 	}
 	data->num_nodes = num_nodes;
+
+	ret = icc_provider_register(provider);
+	if (ret)
+		goto err;
 
 	clk_bulk_disable_unprepare(qp->num_qos_clks, qp->qos_clks);
 
@@ -1765,10 +1771,10 @@ static int qnoc_probe(struct platform_device *pdev)
 
 	return 0;
 err:
-	clk_bulk_disable_unprepare(qp->num_qos_clks, qp->qos_clks);
-	clk_bulk_disable_unprepare(qp->num_clks, qp->bus_clks);
 	icc_nodes_remove(provider);
-	icc_provider_del(provider);
+	clk_bulk_disable_unprepare(qp->num_qos_clks, qp->qos_clks);
+err_bus_clks:
+	clk_bulk_disable_unprepare(qp->num_clks, qp->bus_clks);
 	return ret;
 }
 
