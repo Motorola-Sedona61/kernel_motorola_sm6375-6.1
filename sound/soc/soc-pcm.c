@@ -1117,7 +1117,7 @@ static int __soc_pcm_hw_params(struct snd_soc_pcm_runtime *rtd,
 #ifdef CONFIG_FOGOS_LEGACY_AUDIO
 	if (ret >= 0 && rtd->dai_link->no_host_mode == SND_SOC_DAI_LINK_NO_HOST) {
 		substream->dma_buffer.dev.type = SNDRV_DMA_TYPE_DEV;
-		substream->dma_buffer.dev.dev = rtd->dev;
+		substream->dma_buffer.dev.dev = substream->pcm->card->dev;
 		substream->dma_buffer.private_data = NULL;
 		ret = snd_pcm_lib_malloc_pages(substream, PAGE_SIZE);
 	}
