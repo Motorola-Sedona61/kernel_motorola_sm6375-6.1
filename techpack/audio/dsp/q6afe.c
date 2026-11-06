@@ -48,6 +48,12 @@ void aw_cal_unmap_memory(void);
  */
 static int g_rx_port_id = 0;
 static bool aw87xxx_registered;
+/*
+ * Set once an AW882xx client sends its first calibration. With
+ * CONFIG_AW882XX_PARAMS_STORED_IN_BIN the stock driver resets unmapped
+ * calibration handles; do that only on boards whose AW882xx is in use.
+ */
+static bool aw882xx_bin_params_active;
 
 void aw_set_port_id(int rx_port_id)
 {
@@ -4162,6 +4168,8 @@ err:
 int aw_send_afe_cal_apr(uint32_t rx_port_id, uint32_t tx_port_id,
 			uint32_t param_id, void *buf, int cmd_size, bool write)
 {
+	if (IS_ENABLED(CONFIG_AW882XX_PARAMS_STORED_IN_BIN))
+		WRITE_ONCE(aw882xx_bin_params_active, true);
 	return aw_afe_cal_apr(rx_port_id, tx_port_id, true, param_id, buf,
 			      cmd_size, write);
 }
@@ -12128,7 +12136,7 @@ static int afe_unmap_cal_data(int32_t cal_type,
 	ret = afe_cmd_memory_unmap(
 		cal_block->map_data.q6map_handle);
 	atomic_set(&this_afe.mem_map_cal_index, -1);
-	if (IS_ENABLED(CONFIG_AW882XX_PARAMS_STORED_IN_BIN) ||
+	if (READ_ONCE(aw882xx_bin_params_active) ||
 	    READ_ONCE(aw87xxx_registered))
 		atomic_set(&this_afe.mem_map_cal_handles[cal_index],0);
 	if (ret < 0) {

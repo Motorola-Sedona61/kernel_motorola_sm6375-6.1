@@ -102,3 +102,11 @@ subdir-ccflags-y += -include $(srctree)/techpack/audio/config/holiautoconf.h
 export CONFIG_SND_SOC_FS1815=m
 subdir-ccflags-y += -DCONFIG_SND_SOC_FS1815=1
 export CONFIG_SND_SOC_AW87XXX=m
+# AW882xx (rhodep): stereo smart PAs with parameters from the firmware bin
+# and the 16K calibration map, as in the stock rhodep configuration. The
+# stereo DAI links are only used with qcom,mi2s-audio-intf (fogos and bangkk
+# disable MI2S), and the Q6 calibration handle reset is enabled at runtime
+# once an AW882xx sends calibration, so the other boards are unaffected.
+export CONFIG_AW882XX_STEREO_SMARTPA=y
+export CONFIG_AW882XX_PARAMS_FROM_BIN=y
+export CONFIG_AW882XX_MAPSIZE_16K=y
