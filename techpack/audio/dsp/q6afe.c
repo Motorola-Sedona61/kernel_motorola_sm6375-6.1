@@ -40,15 +40,21 @@
 void aw_cal_unmap_memory(void);
 #endif /* #ifdef CONFIG_SND_SOC_AWINIC_AW882XX */
 
-#ifdef CONFIG_SND_SOC_AW87XXX
+/*
+ * AW87xxx amplifiers (bangkk) send their calibration on the RX port that
+ * they register here. The shared Q6 driver also serves AW882xx clients, so
+ * both entry points stay available and AW87xxx-only behavior is enabled at
+ * runtime once an AW87xxx registers.
+ */
 static int g_rx_port_id = 0;
+static bool aw87xxx_registered;
 
 void aw_set_port_id(int rx_port_id)
 {
        g_rx_port_id = rx_port_id;
+       WRITE_ONCE(aw87xxx_registered, true);
 }
 EXPORT_SYMBOL(aw_set_port_id);
-#endif /* #ifdef CONFIG_SND_SOC_AW87XXX */
 
 #define WAKELOCK_TIMEOUT	5000
 #define AFE_CLK_TOKEN	1024
@@ -4025,19 +4031,11 @@ int aw_send_afe_tx_module_enable(uint32_t tx_port_id, void *buf, int cmd_size)
 }
 EXPORT_SYMBOL(aw_send_afe_tx_module_enable);
 
-#ifdef CONFIG_SND_SOC_AW87XXX
-int aw_send_afe_cal_apr(uint32_t param_id, void *buf, int cmd_size, bool write)     /*aw87xxx*/
-#else
-int aw_send_afe_cal_apr(uint32_t rx_port_id, uint32_t tx_port_id,
-						uint32_t param_id, void *buf, int cmd_size, bool write)   /*aw882xx*/
-#endif
+static int aw_afe_cal_apr(uint32_t rx_port_id, uint32_t tx_port_id, bool use_tx,
+			  uint32_t param_id, void *buf, int cmd_size, bool write)
 {
 	int32_t result = 0;
-#ifdef CONFIG_SND_SOC_AW87XXX
-	uint32_t port_id = g_rx_port_id;
-#else
-	uint32_t port_id = rx_port_id;   /*aw882xx*/
-#endif
+	uint32_t port_id = rx_port_id;
 	int32_t  module_id = AFE_MODULE_ID_AWDSP_RX;
 	uint32_t port_index = 0;
 	uint32_t payload_size = 0;
@@ -4048,12 +4046,10 @@ int aw_send_afe_cal_apr(uint32_t rx_port_id, uint32_t tx_port_id,
 
 	pr_debug("%s: enter\n", __func__);
 
-#ifndef CONFIG_SND_SOC_AW87XXX
-	if (param_id == AFE_PARAM_ID_AWDSP_TX_SET_ENABLE) {
+	if (use_tx && param_id == AFE_PARAM_ID_AWDSP_TX_SET_ENABLE) {
 		port_id = tx_port_id;
 		module_id = AFE_MODULE_ID_AWDSP_TX;
 	}
-#endif
 
 	if (aw_cal->map_data.dma_buf == 0) {
 		/*Minimal chunk size is 8K*/
@@ -4161,7 +4157,23 @@ int aw_send_afe_cal_apr(uint32_t rx_port_id, uint32_t tx_port_id,
 err:
 	return result;
 }
+
+/* AW882xx: explicit RX and TX ports. */
+int aw_send_afe_cal_apr(uint32_t rx_port_id, uint32_t tx_port_id,
+			uint32_t param_id, void *buf, int cmd_size, bool write)
+{
+	return aw_afe_cal_apr(rx_port_id, tx_port_id, true, param_id, buf,
+			      cmd_size, write);
+}
 EXPORT_SYMBOL(aw_send_afe_cal_apr);
+
+/* AW87xxx: the RX port registered with aw_set_port_id(). */
+int aw87xxx_send_afe_cal_apr(uint32_t param_id, void *buf, int cmd_size, bool write)
+{
+	return aw_afe_cal_apr(g_rx_port_id, 0, false, param_id, buf,
+			      cmd_size, write);
+}
+EXPORT_SYMBOL(aw87xxx_send_afe_cal_apr);
 
 void aw_cal_unmap_memory(void)
 {
@@ -12116,9 +12128,9 @@ static int afe_unmap_cal_data(int32_t cal_type,
 	ret = afe_cmd_memory_unmap(
 		cal_block->map_data.q6map_handle);
 	atomic_set(&this_afe.mem_map_cal_index, -1);
-#if defined(CONFIG_AW882XX_PARAMS_STORED_IN_BIN) || defined(CONFIG_SND_SOC_AW87XXX)
-	atomic_set(&this_afe.mem_map_cal_handles[cal_index],0);
-#endif
+	if (IS_ENABLED(CONFIG_AW882XX_PARAMS_STORED_IN_BIN) ||
+	    READ_ONCE(aw87xxx_registered))
+		atomic_set(&this_afe.mem_map_cal_handles[cal_index],0);
 	if (ret < 0) {
 		pr_err("%s: unmap did not work! cal_type %i ret %d\n",
 			__func__, cal_index, ret);

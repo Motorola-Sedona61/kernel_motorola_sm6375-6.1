@@ -71,8 +71,10 @@ static int mtk_spk_recv_ipi_buf_from_dsp(int8_t *buffer,
 */
 #elif defined AW_QCOM_OPEN_DSP_PLATFORM
 extern int afe_get_topology(int port_id);
-extern int aw_send_afe_cal_apr(uint32_t param_id,
+/* The shared Q6 driver keeps aw_send_afe_cal_apr() for AW882xx. */
+extern int aw87xxx_send_afe_cal_apr(uint32_t param_id,
 	void *buf, int cmd_size, bool write);
+#define aw_send_afe_cal_apr aw87xxx_send_afe_cal_apr
 /*
 static int afe_get_topology(int port_id)
 {

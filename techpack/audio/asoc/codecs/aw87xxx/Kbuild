@@ -1,5 +1,7 @@
 # add -Wall to try to catch everything we can.
 EXTRA_CFLAGS += -Wall
+# Vendor code keeps several computed-but-unused locals.
+EXTRA_CFLAGS += -Wno-unused-but-set-variable
 EXTRA_CFLAGS += -I$(srctree)/techpack/audio/include
 EXTRA_CFLAGS += -I$(srctree)/techpack/audio/include/uapi/
 

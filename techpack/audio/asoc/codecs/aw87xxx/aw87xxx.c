@@ -45,6 +45,13 @@
 #include <sound/control.h>
 #include <sound/soc.h>
 #include "aw87xxx.h"
+
+/* The reset GPIO is devres managed; 6.0 dropped devm_gpio_free(). */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+#define aw87xxx_gpio_free(dev, gpio) do { } while (0)
+#else
+#define aw87xxx_gpio_free(dev, gpio) devm_gpio_free(dev, gpio)
+#endif
 #include "aw87xxx_device.h"
 #include "aw87xxx_log.h"
 #include "aw87xxx_monitor.h"
@@ -1776,7 +1783,7 @@ exit_device_init_failed:
 exit_dtsi_parse_failed:
 	AW_DEV_LOGE(aw87xxx->dev, "pa init failed");
 	if (gpio_is_valid(aw87xxx->aw_dev.rst_gpio))
-		devm_gpio_free(&client->dev, aw87xxx->aw_dev.rst_gpio);
+		aw87xxx_gpio_free(&client->dev, aw87xxx->aw_dev.rst_gpio);
 	devm_kfree(&client->dev, aw87xxx);
 	aw87xxx = NULL;
 exit_malloc_init_failed:
@@ -1784,12 +1791,16 @@ exit_check_functionality_failed:
 	return ret;
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
+static void aw87xxx_i2c_remove(struct i2c_client *client)
+#else
 static int aw87xxx_i2c_remove(struct i2c_client *client)
+#endif
 {
 	struct aw87xxx *aw87xxx = i2c_get_clientdata(client);
 
 	if (gpio_is_valid(aw87xxx->aw_dev.rst_gpio))
-		devm_gpio_free(&client->dev, aw87xxx->aw_dev.rst_gpio);
+		aw87xxx_gpio_free(&client->dev, aw87xxx->aw_dev.rst_gpio);
 
 	aw87xxx_monitor_exit(&aw87xxx->monitor);
 
@@ -1806,7 +1817,9 @@ static int aw87xxx_i2c_remove(struct i2c_client *client)
 	devm_kfree(&client->dev, aw87xxx);
 	aw87xxx = NULL;
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
 	return 0;
+#endif
 }
 
 static void aw87xxx_i2c_shutdown(struct i2c_client *client)

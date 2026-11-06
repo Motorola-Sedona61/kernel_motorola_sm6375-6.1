@@ -95,5 +95,10 @@ obj-y += asoc/
 subdir-ccflags-y += -I$(srctree)/techpack/audio/include
 subdir-ccflags-y += -I$(srctree)/techpack/audio/include/uapi/audio
 subdir-ccflags-y += -include $(srctree)/techpack/audio/config/holiautoconf.h
+# Speaker amplifiers: FS1815 (fogos) and AW87xxx (bangkk). Both drivers only
+# bind to their own DT nodes, so one machine driver serves both boards. The
+# AW87xxx define is limited to the machine driver (asoc/Kbuild) and its own
+# directory: the shared Q6 driver keeps the AW882xx calibration ABI.
 export CONFIG_SND_SOC_FS1815=m
 subdir-ccflags-y += -DCONFIG_SND_SOC_FS1815=1
+export CONFIG_SND_SOC_AW87XXX=m
