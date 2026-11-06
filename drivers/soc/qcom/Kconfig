@@ -32,6 +32,13 @@ config FOGOS_DTB
 	help
 	  Select the fogos EVT and DVT1 device trees.
 
+config BANGKK_DTB
+	bool "Motorola Mobility Bangkk Device DTB"
+	depends on MMI_DEVICE_DTBS
+	help
+	  Select the bangkk device tree overlay. Bangkk shares the fogos
+	  Blair base device tree.
+
 config MALMO_DTB
 	depends on MMI_DEVICE_DTBS
 	default n
