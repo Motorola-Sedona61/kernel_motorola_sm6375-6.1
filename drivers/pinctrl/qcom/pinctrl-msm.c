@@ -20,6 +20,7 @@
 #include <linux/gpio/driver.h>
 #include <linux/interrupt.h>
 #include <linux/spinlock.h>
+#include <linux/string.h>
 #include <linux/reboot.h>
 #include <linux/pm.h>
 #include <linux/log2.h>
@@ -252,6 +253,13 @@ static int msm_get_function_groups(struct pinctrl_dev *pctldev,
 	return 0;
 }
 
+static bool msm_pinmux_is_mdp_vsync(struct msm_pinctrl *pctrl,
+				   const struct msm_pingroup *g, unsigned int mux)
+{
+	return mux < g->nfuncs && g->funcs[mux] < pctrl->soc->nfunctions &&
+		!strcasecmp(pctrl->soc->functions[g->funcs[mux]].name, "mdp_vsync");
+}
+
 static int msm_pinmux_set_mux(struct pinctrl_dev *pctldev,
 			      unsigned function,
 			      unsigned group)
@@ -267,6 +275,7 @@ static int msm_pinmux_set_mux(struct pinctrl_dev *pctldev,
 	unsigned long flags;
 	u32 val, mask;
 	int i;
+	bool irq_mux;
 
 	g = &pctrl->soc->groups[group];
 	mask = GENMASK(g->mux_bit + order_base_2(g->nfuncs) - 1, g->mux_bit);
@@ -278,6 +287,7 @@ static int msm_pinmux_set_mux(struct pinctrl_dev *pctldev,
 
 	if (WARN_ON(i == g->nfuncs))
 		return -EINVAL;
+	irq_mux = i == gpio_func || msm_pinmux_is_mdp_vsync(pctrl, g, i);
 
 	/*
 	 * If an GPIO interrupt is setup on this pin then we need special
@@ -288,8 +298,9 @@ static int msm_pinmux_set_mux(struct pinctrl_dev *pctldev,
 	 * (mask) interrupts on it when we mux away until we mux back.  Note
 	 * that disable_irq() refcounts and interrupts are disabled as long as
 	 * at least one disable_irq() has been called.
+	 * MDP VSYNC intentionally shares the GPIO interrupt detector.
 	 */
-	if (d && i != gpio_func &&
+	if (d && !irq_mux &&
 	    !test_and_set_bit(d->hwirq, pctrl->disabled_for_mux))
 		disable_irq(irq);
 
@@ -335,7 +346,7 @@ static int msm_pinmux_set_mux(struct pinctrl_dev *pctldev,
 
 	raw_spin_unlock_irqrestore(&pctrl->lock, flags);
 
-	if (d && i == gpio_func &&
+	if (d && irq_mux &&
 	    test_and_clear_bit(d->hwirq, pctrl->disabled_for_mux)) {
 		/*
 		 * Clear interrupts detected while not GPIO since we only
@@ -1558,14 +1569,25 @@ static int msm_gpio_irq_reqres(struct irq_data *d)
 {
 	struct gpio_chip *gc = irq_data_get_irq_chip_data(d);
 	struct msm_pinctrl *pctrl = gpiochip_get_data(gc);
+	const struct msm_pingroup *g = &pctrl->soc->groups[d->hwirq];
+	u32 mux;
 	int ret;
 
 	if (!try_module_get(gc->owner))
 		return -ENODEV;
 
-	ret = msm_pinmux_request_gpio(pctrl->pctrl, NULL, d->hwirq);
-	if (ret)
-		goto out;
+	/* Panel TE is sampled by both MDP and the GPIO interrupt detector. */
+	if (g->nfuncs) {
+		mux = (msm_readl_ctl(pctrl, g) >> g->mux_bit) &
+			(BIT(order_base_2(g->nfuncs)) - 1);
+	} else {
+		mux = g->nfuncs;
+	}
+	if (!msm_pinmux_is_mdp_vsync(pctrl, g, mux)) {
+		ret = msm_pinmux_request_gpio(pctrl->pctrl, NULL, d->hwirq);
+		if (ret)
+			goto out;
+	}
 	msm_gpio_direction_input(gc, d->hwirq);
 
 	if (gpiochip_lock_as_irq(gc, d->hwirq)) {
