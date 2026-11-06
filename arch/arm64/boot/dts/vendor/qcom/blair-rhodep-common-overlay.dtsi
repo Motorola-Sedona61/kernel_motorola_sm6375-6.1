@@ -93,6 +93,16 @@
 };
 
 
+/*
+ * The shared Blair base reserves 13-16, 45, 46, 56 and 57 (the malmo TZ
+ * pins, minus fogos's gpio17/gpio48). Stock rhodep reserves none of them
+ * and drives the AMOLED VCI enable (panel_vci) on gpio46, so release it;
+ * reserved pins fail pinctrl and gpio_request with -EINVAL.
+ */
+&tlmm {
+	qcom,gpios-reserved = <13 14 15 16 45 56 57>;
+};
+
 &tlmm {
 	nfc {
 		nfc_int_active: nfc_int_active {
