@@ -39,6 +39,13 @@ config BANGKK_DTB
 	  Select the bangkk device tree overlay. Bangkk shares the fogos
 	  Blair base device tree.
 
+config RHODEP_DTB
+	bool "Motorola Mobility Rhodep Device DTB"
+	depends on MMI_DEVICE_DTBS
+	help
+	  Select the rhodep EVT1, EVT2, DVT1 and DVT2 device tree overlays.
+	  Rhodep shares the fogos Blair base device tree.
+
 config MALMO_DTB
 	depends on MMI_DEVICE_DTBS
 	default n

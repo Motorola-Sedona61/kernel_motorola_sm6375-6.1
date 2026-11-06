@@ -1,14 +1,18 @@
 #include <dt-bindings/thermal/thermal_qti.h>
 
+#ifndef BLAIR_NOPMI
 &pm7250b_charger {
 	#cooling-cells = <2>;
 };
+#endif
 
 &cxip_cdev {
 	status = "ok";
 };
 
 &thermal_zones {
+#ifndef BLAIR_NOPMI
+	/* PM7250B zones; boards without the PM7250B define BLAIR_NOPMI. */
 	socd {
 		cooling-maps {
 			socd_cpu6 {
@@ -36,6 +40,7 @@
 			};
 		};
 	};
+#endif
 
 	pm6125_tz {
 		cooling-maps {
@@ -80,6 +85,7 @@
 		};
 	};
 
+#ifndef BLAIR_NOPMI
 	pm7250b-bcl-lvl0 {
 		cooling-maps {
 			lbat_modem {
@@ -136,4 +142,5 @@
 			};
 		};
 	};
+#endif
 };
