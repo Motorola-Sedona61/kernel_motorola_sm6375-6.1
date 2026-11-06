@@ -1708,6 +1708,17 @@ static const struct msm_pinctrl_soc_data blair_pinctrl = {
 
 static int blair_pinctrl_probe(struct platform_device *pdev)
 {
+	if (of_machine_is_compatible("qcom,blair-rhodep")) {
+		struct msm_pinctrl_soc_data *soc;
+
+		soc = devm_kmemdup(&pdev->dev, &blair_pinctrl,
+				   sizeof(blair_pinctrl), GFP_KERNEL);
+		if (!soc)
+			return -ENOMEM;
+		soc->reserved_gpios = NULL;
+		return msm_pinctrl_probe(pdev, soc);
+	}
+
 	return msm_pinctrl_probe(pdev, &blair_pinctrl);
 }
 
