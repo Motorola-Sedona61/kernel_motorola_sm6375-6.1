@@ -1,0 +1,34 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/dts-v1/;
+/plugin/;
+
+&tlmm {
+    qcom,gpios-reserved = <13 14 15 16 45 46 56 57>;
+};
+
+&soc {
+    qcom,memshare {
+        compatible = "qcom,memshare";
+        qcom,client_1 {
+            compatible = "qcom,memshare-peripheral";
+            qcom,peripheral-size = <0>;
+            qcom,client-id = <0>;
+            qcom,allocate-boot-time;
+            label = "modem";
+        };
+        qcom,client_2 {
+            compatible = "qcom,memshare-peripheral";
+            qcom,peripheral-size = <0>;
+            qcom,client-id = <2>;
+            label = "modem";
+        };
+        qcom,client_3 {
+            compatible = "qcom,memshare-peripheral";
+            qcom,peripheral-size = <0x500000>;
+            memory-region = <&memshare_mem>;
+            qcom,client-id = <1>;
+            qcom,allocate-on-request;
+            label = "modem";
+        };
+    };
+};
