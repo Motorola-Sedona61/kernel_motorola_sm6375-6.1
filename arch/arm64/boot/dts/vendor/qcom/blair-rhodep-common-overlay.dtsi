@@ -31,6 +31,12 @@
 #include "discrete-rt-pd-manger.dtsi"
 #include "moto_therm_sys_temp.dtsi"
 
+&usb0 {
+	dwc3@4e00000 {
+		dr_mode = "otg";
+	};
+};
+
 &qupv3_se8_i2c {
 	status = "okay";
 	cw2217@64 {
