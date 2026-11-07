@@ -6000,6 +6000,33 @@ static struct snd_soc_dai_link msm_holi_dai_links[
 			ARRAY_SIZE(msm_sec_mi2s_tx_hotless_dai_links)];
 #endif
 
+static void msm_holi_ignore_unwired_mi2s_links(struct snd_soc_card *card)
+{
+	struct snd_soc_dai_link *link;
+	struct device_node *cpu;
+	u32 lines;
+	int i;
+
+	if (!of_machine_is_compatible("qcom,blair-rhodep"))
+		return;
+
+	for (i = 0; i < card->num_links; i++) {
+		link = &card->dai_link[i];
+		if (!link->no_pcm || link->num_cpus != 1)
+			continue;
+
+		cpu = link->cpus[0].of_node;
+		if (!of_device_is_compatible(cpu, "qcom,msm-dai-q6-mi2s") ||
+		    of_property_read_u32(cpu, "qcom,msm-mi2s-lines", &lines) ||
+		    lines)
+			continue;
+
+		/* A zero-line DAI has no stream for the 6.1 PCM validation. */
+		link->ignore = 1;
+		dev_info(card->dev, "Skipping unwired MI2S link %s\n", link->name);
+	}
+}
+
 static int msm_populate_dai_link_component_of_node(
 					struct snd_soc_card *card)
 {
@@ -6889,6 +6916,8 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 		ret = -EPROBE_DEFER;
 		goto err;
 	}
+
+	msm_holi_ignore_unwired_mi2s_links(card);
 
 	ret = devm_snd_soc_register_card(&pdev->dev, card);
 	if (ret == -EPROBE_DEFER) {
