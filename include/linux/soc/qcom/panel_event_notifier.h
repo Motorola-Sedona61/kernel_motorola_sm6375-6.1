@@ -53,6 +53,10 @@ typedef void (*panel_event_notifier_handler)(enum panel_event_notifier_tag tag,
 					void *pvt_data);
 
 #if IS_ENABLED(CONFIG_QCOM_PANEL_EVENT_NOTIFIER)
+/* Motorola TDDI power state: panel_idx is zero-based, state 1 retains power. */
+int touch_set_state(int state, int panel_idx);
+int check_touch_state(int *state, int panel_idx);
+
 void *panel_event_notifier_register(enum panel_event_notifier_tag tag,
 		enum panel_event_notifier_client client_handle,
 		struct drm_panel *panel,

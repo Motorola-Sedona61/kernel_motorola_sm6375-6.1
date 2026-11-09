@@ -20,6 +20,30 @@ static DEFINE_MUTEX(panel_event_notifier_entries_lock);
 static struct panel_event_notifier_entry
 		panel_event_notifier_entries[PANEL_EVENT_NOTIFIER_CLIENT_MAX];
 
+/* Shared by TDDI gesture drivers and the DSI panel power sequence. */
+static int touch_states[PANEL_EVENT_NOTIFICATION_MAX - 1];
+
+int touch_set_state(int state, int panel_idx)
+{
+	if (panel_idx < 0 || panel_idx >= (int)ARRAY_SIZE(touch_states) ||
+			(state != 0 && state != 1))
+		return -EINVAL;
+
+	WRITE_ONCE(touch_states[panel_idx], state);
+	return 0;
+}
+EXPORT_SYMBOL_GPL(touch_set_state);
+
+int check_touch_state(int *state, int panel_idx)
+{
+	if (!state || panel_idx < 0 || panel_idx >= (int)ARRAY_SIZE(touch_states))
+		return -EINVAL;
+
+	*state = READ_ONCE(touch_states[panel_idx]);
+	return 0;
+}
+EXPORT_SYMBOL_GPL(check_touch_state);
+
 static bool panel_event_notifier_tag_valid(enum panel_event_notifier_tag tag)
 {
 	return tag > PANEL_EVENT_NOTIFICATION_NONE &&
