@@ -1348,6 +1348,11 @@ void fsm_set_scene(int scene)
 	}
 	fsm_mutex_lock();
 	cfg->next_scene = BIT(scene);
+	list_for_each_entry(fsm_dev, &fsm_dev_list, list) {
+		/* Reinitialize an amplifier when it participates in a scene again. */
+		if ((fsm_dev->own_scene & cfg->next_scene) == 0)
+			fsm_dev->cur_scene = FSM_SCENE_UNKNOW;
+	}
 	fsm_list_func(fsm_dev, fsm_stub_switch_preset);
 	fsm_mutex_unlock();
 }
