@@ -498,7 +498,7 @@ static const struct kernel_param_ops simple_lmk_init_ops = {
 #define MODULE_PARAM_PREFIX "lowmemorykiller."
 module_param_cb(minfree, &simple_lmk_init_ops, NULL, 0200);
 
-#if defined(CONFIG_PROC_FS) && !defined(CONFIG_PSI)
+#ifdef CONFIG_PROC_FS
 /*
  * lmkd switches to its in-kernel LMK mode when it finds the minfree parameter
  * above, but ActivityManager still tells it to start PSI monitoring once boot
@@ -507,6 +507,11 @@ module_param_cb(minfree, &simple_lmk_init_ops, NULL, 0200);
  * reports a stall, so lmkd stays up without becoming a second LMK.
  */
 #define PSI_COMPAT_WINDOW_MAX_US (10 * USEC_PER_SEC)
+
+#ifdef CONFIG_PSI
+/* PSI built in (Android's VINTF requires it) but off unless psi=1 is passed */
+extern struct static_key_false psi_disabled;
+#endif
 
 static int psi_compat_show(struct seq_file *m, void *v)
 {
@@ -580,6 +585,12 @@ static const struct proc_ops psi_compat_proc_ops = {
 
 static int __init psi_compat_init(void)
 {
+#ifdef CONFIG_PSI
+	if (!static_branch_likely(&psi_disabled)) {
+		pr_warn("PSI is enabled, lmkd will kill alongside Simple LMK\n");
+		return 0;
+	}
+#endif
 	if (!proc_mkdir("pressure", NULL) ||
 	    !proc_create("pressure/memory", 0, NULL, &psi_compat_proc_ops))
 		return -ENOMEM;
