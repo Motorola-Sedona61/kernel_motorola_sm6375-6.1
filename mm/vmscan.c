@@ -30,6 +30,7 @@
 #include <linux/mm_inline.h>
 #include <linux/backing-dev.h>
 #include <linux/rmap.h>
+#include <linux/srcu.h>
 #include <linux/topology.h>
 #include <linux/cpu.h>
 #include <linux/cpuset.h>
@@ -212,6 +213,8 @@ static void set_task_reclaim_state(struct task_struct *task,
 
 static LIST_HEAD(shrinker_list);
 static DEFINE_SPINLOCK(shrinker_lock);
+/* Lets synchronize_shrinkers() wait out the shrink_slab() calls in progress */
+DEFINE_STATIC_SRCU(shrinker_srcu);
 static DEFINE_RWLOCK(shrinker_rwlock);
 
 #ifdef CONFIG_MEMCG
@@ -809,8 +812,11 @@ EXPORT_SYMBOL(unregister_shrinker);
  */
 void synchronize_shrinkers(void)
 {
-	down_write(&shrinker_rwsem);
-	up_write(&shrinker_rwsem);
+	/*
+	 * Shrinkers run without a global lock now, so wait for every
+	 * shrink_slab() walk that might be running one.
+	 */
+	synchronize_srcu(&shrinker_srcu);
 }
 EXPORT_SYMBOL(synchronize_shrinkers);
 #endif
@@ -1025,6 +1031,7 @@ unsigned long shrink_slab(gfp_t gfp_mask, int nid,
 	unsigned long ret, freed = 0;
 	struct shrinker *shrinker;
 	bool bypass = false;
+	int srcu_idx;
 
 	trace_android_vh_shrink_slab_bypass(gfp_mask, nid, memcg, priority, &bypass);
 	if (bypass)
@@ -1040,6 +1047,7 @@ unsigned long shrink_slab(gfp_t gfp_mask, int nid,
 	if (!mem_cgroup_disabled() && !mem_cgroup_is_root(memcg))
 		return shrink_slab_memcg(gfp_mask, nid, memcg, priority);
 
+	srcu_idx = srcu_read_lock(&shrinker_srcu);
 	read_lock(&shrinker_rwlock);
 	/* Use the RCU list iteration primitive to allow concurrent additions */
 	list_for_each_entry_rcu(shrinker, &shrinker_list, list) {
@@ -1062,6 +1070,7 @@ unsigned long shrink_slab(gfp_t gfp_mask, int nid,
 		up_read(&shrinker->del_rwsem);
 	}
 	read_unlock(&shrinker_rwlock);
+	srcu_read_unlock(&shrinker_srcu, srcu_idx);
 
 	cond_resched();
 	return freed;
