@@ -851,6 +851,11 @@ KBUILD_CFLAGS += -O2
 KBUILD_RUSTFLAGS += -Copt-level=2
 else ifdef CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE_O3
 KBUILD_CFLAGS += -O3
+# At -O3, Clang's GlobalMerge pass folds a file's static variables (per-CPU
+# ones included) into one symbol, so their DWARF locations become base+offset.
+# pahole ignores the offset and emits the per-CPU vars at the same address,
+# which makes the kernel reject vmlinux BTF and Android's bpfloader fail.
+KBUILD_CFLAGS += $(call cc-option,-mno-global-merge)
 KBUILD_RUSTFLAGS += -Copt-level=3
 else ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS += -Os
