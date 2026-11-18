@@ -355,7 +355,10 @@ static void update_dump_size(char *name, size_t size, char **addr, size_t *dump_
 #ifdef CONFIG_PAGE_OWNER
 static unsigned long page_owner_filter = 0xF;
 static unsigned long page_owner_handles_size =  SZ_16K;
-static int nr_page_owner_handles, nr_slab_owner_handles;
+static int nr_page_owner_handles;
+#ifdef CONFIG_SLUB_DEBUG
+static int nr_slab_owner_handles;
+#endif
 static LIST_HEAD(accounted_call_site_list);
 static DEFINE_SPINLOCK(accounted_call_site_lock);
 struct accounted_call_site {
