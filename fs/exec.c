@@ -83,6 +83,28 @@ static int bprm_creds_from_file(struct linux_binprm *bprm);
 
 int suid_dumpable = 0;
 
+#define LIBPERFMGR_BIN "/vendor/bin/hw/android.hardware.power-service.pixel-libperfmgr"
+
+static struct task_struct *libperfmgr_tsk;
+bool task_is_libperfmgr(struct task_struct *p)
+{
+	struct task_struct *tsk;
+	bool ret;
+
+	rcu_read_lock();
+	tsk = READ_ONCE(libperfmgr_tsk);
+	ret = tsk && same_thread_group(p, tsk);
+	rcu_read_unlock();
+
+	return ret;
+}
+
+void dead_special_task(void)
+{
+	if (unlikely(current == libperfmgr_tsk))
+		WRITE_ONCE(libperfmgr_tsk, NULL);
+}
+
 static LIST_HEAD(formats);
 static DEFINE_RWLOCK(binfmt_lock);
 
@@ -1877,6 +1899,10 @@ static int bprm_execve(struct linux_binprm *bprm,
 	retval = exec_binprm(bprm);
 	if (retval < 0)
 		goto out;
+
+	if (is_global_init(current->parent) &&
+	    unlikely(!strcmp(filename->name, LIBPERFMGR_BIN)))
+		WRITE_ONCE(libperfmgr_tsk, current);
 
 	/* execve succeeded */
 	current->fs->in_exec = 0;
