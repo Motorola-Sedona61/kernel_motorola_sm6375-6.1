@@ -6,12 +6,17 @@
 #define pr_fmt(fmt) "simple_lmk: " fmt
 
 #include <linux/freezer.h>
+#include <linux/init.h>
 #include <linux/kthread.h>
 #include <linux/mm.h>
 #include <linux/moduleparam.h>
 #include <linux/oom.h>
+#include <linux/poll.h>
+#include <linux/proc_fs.h>
 #include <linux/sched/mm.h>
+#include <linux/seq_file.h>
 #include <linux/sort.h>
+#include <linux/uaccess.h>
 #include <linux/vmpressure.h>
 #include <uapi/linux/sched/types.h>
 
@@ -492,3 +497,94 @@ static const struct kernel_param_ops simple_lmk_init_ops = {
 #undef MODULE_PARAM_PREFIX
 #define MODULE_PARAM_PREFIX "lowmemorykiller."
 module_param_cb(minfree, &simple_lmk_init_ops, NULL, 0200);
+
+#if defined(CONFIG_PROC_FS) && !defined(CONFIG_PSI)
+/*
+ * lmkd switches to its in-kernel LMK mode when it finds the minfree parameter
+ * above, but ActivityManager still tells it to start PSI monitoring once boot
+ * completes, and lmkd exits when it can't, since Simple LMK needs PSI off.
+ * Give it a /proc/pressure/memory that takes triggers like PSI's but never
+ * reports a stall, so lmkd stays up without becoming a second LMK.
+ */
+#define PSI_COMPAT_WINDOW_MAX_US (10 * USEC_PER_SEC)
+
+static int psi_compat_show(struct seq_file *m, void *v)
+{
+	seq_puts(m, "some avg10=0.00 avg60=0.00 avg300=0.00 total=0\n"
+		    "full avg10=0.00 avg60=0.00 avg300=0.00 total=0\n");
+	return 0;
+}
+
+static int psi_compat_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, psi_compat_show, NULL);
+}
+
+static ssize_t psi_compat_write(struct file *file, const char __user *ubuf,
+				size_t nbytes, loff_t *ppos)
+{
+	struct seq_file *seq = file->private_data;
+	unsigned int threshold_us, window_us;
+	char buf[32];
+	size_t len;
+
+	if (!nbytes)
+		return -EINVAL;
+
+	len = min(nbytes, sizeof(buf));
+	if (copy_from_user(buf, ubuf, len))
+		return -EFAULT;
+	buf[len - 1] = '\0';
+
+	/* Validate the trigger the same way PSI does */
+	if (sscanf(buf, "some %u %u", &threshold_us, &window_us) != 2 &&
+	    sscanf(buf, "full %u %u", &threshold_us, &window_us) != 2)
+		return -EINVAL;
+	if (!window_us || window_us > PSI_COMPAT_WINDOW_MAX_US ||
+	    !threshold_us || threshold_us > window_us)
+		return -EINVAL;
+
+	/* Like PSI, allow only one trigger per file descriptor */
+	mutex_lock(&seq->lock);
+	if (seq->private) {
+		mutex_unlock(&seq->lock);
+		return -EBUSY;
+	}
+	/* Any non-NULL value marks the trigger as set */
+	smp_store_release(&seq->private, file);
+	mutex_unlock(&seq->lock);
+
+	return nbytes;
+}
+
+static __poll_t psi_compat_poll(struct file *file, poll_table *wait)
+{
+	struct seq_file *seq = file->private_data;
+
+	/* Like PSI, polling without a trigger is an error */
+	if (!smp_load_acquire(&seq->private))
+		return DEFAULT_POLLMASK | EPOLLERR | EPOLLPRI;
+
+	/* The trigger never fires */
+	return DEFAULT_POLLMASK;
+}
+
+static const struct proc_ops psi_compat_proc_ops = {
+	.proc_open	= psi_compat_open,
+	.proc_read	= seq_read,
+	.proc_lseek	= seq_lseek,
+	.proc_write	= psi_compat_write,
+	.proc_poll	= psi_compat_poll,
+	.proc_release	= single_release,
+};
+
+static int __init psi_compat_init(void)
+{
+	if (!proc_mkdir("pressure", NULL) ||
+	    !proc_create("pressure/memory", 0, NULL, &psi_compat_proc_ops))
+		return -ENOMEM;
+
+	return 0;
+}
+late_initcall(psi_compat_init);
+#endif
