@@ -531,16 +531,32 @@ qcom,kgsl-3d0@5900000 {
 
 		};
 
+		/*
+		 * SD 695 (FMAX 840 MHz) parts get the same table as the 6s Gen 3
+		 * (speed-bin 190), including its 900 MHz TURBO_L1 level. gpucc-blair
+		 * allows 900 MHz at VDD_HIGH_L1 on every blair part.
+		 */
 		qcom,gpu-pwrlevels-2 {
 			#address-cells = <1>;
 			#size-cells = <0>;
 			qcom,speed-bin = <177>;
-			qcom,ca-target-pwrlevel = <4>;
-			qcom,initial-pwrlevel = <5>;
+			qcom,ca-target-pwrlevel = <5>;
+			qcom,initial-pwrlevel = <6>;
 
-			/* TURBO */
+			/* TURBO_L1 */
 			qcom,gpu-pwrlevel@0 {
 				reg = <0>;
+				qcom,gpu-freq = <900000000>;
+				qcom,level = <RPMH_REGULATOR_LEVEL_TURBO_L1>;
+
+				qcom,bus-freq-ddr7 = <9>;
+				qcom,bus-min-ddr7 = <8>;
+				qcom,bus-max-ddr7 = <9>;
+			};
+
+			/* TURBO */
+			qcom,gpu-pwrlevel@1 {
+				reg = <1>;
 				qcom,gpu-freq = <840000000>;
 				qcom,level = <RPMH_REGULATOR_LEVEL_TURBO>;
 
@@ -551,8 +567,8 @@ qcom,kgsl-3d0@5900000 {
 			};
 
 			/* NOM_L1 */
-			qcom,gpu-pwrlevel@1 {
-				reg = <1>;
+			qcom,gpu-pwrlevel@2 {
+				reg = <2>;
 				qcom,gpu-freq = <770000000>;
 				qcom,level = <RPMH_REGULATOR_LEVEL_NOM_L1>;
 
@@ -563,8 +579,8 @@ qcom,kgsl-3d0@5900000 {
 			};
 
 			/* NOM */
-			qcom,gpu-pwrlevel@2 {
-				reg = <2>;
+			qcom,gpu-pwrlevel@3 {
+				reg = <3>;
 				qcom,gpu-freq = <650000000>;
 				qcom,level = <RPMH_REGULATOR_LEVEL_NOM>;
 
@@ -575,8 +591,8 @@ qcom,kgsl-3d0@5900000 {
 			};
 
 			/* SVS_L1 */
-			qcom,gpu-pwrlevel@3 {
-				reg = <3>;
+			qcom,gpu-pwrlevel@4 {
+				reg = <4>;
 				qcom,gpu-freq = <490000000>;
 				qcom,level = <RPMH_REGULATOR_LEVEL_SVS_L1>;
 
@@ -587,8 +603,8 @@ qcom,kgsl-3d0@5900000 {
 			};
 
 			/* SVS */
-			qcom,gpu-pwrlevel@4 {
-				reg = <4>;
+			qcom,gpu-pwrlevel@5 {
+				reg = <5>;
 				qcom,gpu-freq = <390000000>;
 				qcom,level = <RPMH_REGULATOR_LEVEL_SVS>;
 
@@ -598,8 +614,8 @@ qcom,kgsl-3d0@5900000 {
 			};
 
 			/* LOW SVS */
-			qcom,gpu-pwrlevel@5 {
-				reg = <5>;
+			qcom,gpu-pwrlevel@6 {
+				reg = <6>;
 				qcom,gpu-freq = <266000000>;
 				qcom,level = <RPMH_REGULATOR_LEVEL_LOW_SVS>;
 
@@ -607,6 +623,7 @@ qcom,kgsl-3d0@5900000 {
 				qcom,bus-min-ddr7 = <1>;
 				qcom,bus-max-ddr7 = <4>;
 			};
+
 		};
 
 		qcom,gpu-pwrlevels-3 {
