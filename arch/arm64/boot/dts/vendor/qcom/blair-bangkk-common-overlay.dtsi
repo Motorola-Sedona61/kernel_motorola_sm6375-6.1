@@ -413,7 +413,7 @@
 		};
 	};
 
-	quiet_therm {
+	quiet-therm {
 		polling-delay-passive = <5000>;
 		polling-delay = <20000>;
 		thermal-governor = "user_space";
